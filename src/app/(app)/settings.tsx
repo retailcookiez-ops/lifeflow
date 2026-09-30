@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { LifeFlowScreen, screenStyles } from '@/components/lifeflow-screen';
@@ -22,6 +23,7 @@ export default function SettingsScreen() {
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Your account</Text>
       <Text style={screenStyles.muted}>{session?.user.email}</Text>
+      <Link href="/welcome" style={{ color: '#8BE9C0', paddingVertical: 14 }}>Open Welcome →</Link>
       <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || saving }} disabled={busy || saving} onPress={() => { void logout(); }}
         style={{ minHeight: 44, justifyContent: 'center', opacity: busy || saving ? 0.4 : 1 }}>
         <Text style={{ color: '#FF9C9C', fontWeight: '600' }}>{busy ? 'Logging out…' : 'Log out'}</Text>

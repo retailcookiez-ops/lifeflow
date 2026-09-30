@@ -55,7 +55,7 @@ A missing/invalid configuration produces a setup message on Welcome instead of a
 
 | URL | Screen | Access |
 | --- | --- | --- |
-| `/welcome` | Welcome | Signed out |
+| `/welcome` | Welcome / Continue to Dashboard | Everyone |
 | `/signup` | Email/password signup | Signed out |
 | `/login` | Email/password login | Signed out |
 | `/` | Dashboard | Signed in |
@@ -63,9 +63,9 @@ A missing/invalid configuration produces a setup message on Welcome instead of a
 | `/habits` | Full habit manager/history | Signed in |
 | `/settings` | Account, sync, local import, logout | Signed in |
 
-Expo Router `Stack.Protected` guards the `(app)` and `(auth)` groups. While the persisted session is checked, a dark loading screen is shown. Sign in switches to Dashboard; logout removes the private routes from navigation history and clears this device's session. Logging out does not log other devices out. AsyncStorage persists the auth session. User-scoped providers unmount on logout/account change, discarding private in-memory data.
+Expo Router `Stack.Protected` guards the `(app)` and `(auth)` groups. Welcome is a public root route, with Continue to Dashboard when already signed in. Settings also links to Welcome. While the persisted session is checked, a dark loading screen is shown. Sign in switches to Dashboard; logout removes the private routes from navigation history and clears this device's session. Logging out does not log other devices out. AsyncStorage persists the auth session. User-scoped providers unmount on logout/account change, discarding private in-memory data.
 
-Desktop retains the sidebar and mobile/narrow web retains bottom tabs. Route group names do not change the URLs above. Signed-out direct requests to private routes are redirected to Welcome; after login the default destination is Dashboard.
+Desktop retains the sidebar and mobile/narrow web retains bottom tabs. Route group names do not change the URLs above. Signed-out direct requests to private routes are redirected to Welcome; after login the default destination is Dashboard. A saved login opens Dashboard, while `/welcome` remains available without logging out.
 
 For a deployed web export, publish the entire `dist` directory including the HTML for each route and configure your host to serve route HTML for extensionless URLs. Do not publish only `index.html`. Authentication route guards run in the client; RLS is the actual data security boundary. Static HTML contains no user's task/habit data.
 
@@ -112,7 +112,7 @@ Use two real email addresses/accounts (A and B) and two devices or separate brow
 1. **Welcome/protected routes:** with no session, visit `/`, `/tasks`, `/habits` and `/settings` directly. Expect Welcome and no private data. Open `/signup` and `/login`. Confirm dark styling. Resize web above/below 900px and check sidebar/bottom navigation after login.
 2. **Signup validation:** try a malformed email, empty password, password shorter than 8 and mismatched confirmation. Expect specific errors without signup. Create A with a valid email, 8+ character password and optional name. Expect confirmation instructions; confirm the email, return to Login, and sign in. Check `profiles` has A's UUID/name/timezone.
 3. **Login errors:** log out; try a wrong password and an unconfirmed email. Expect helpful errors. Log in correctly; expect Dashboard, not a blank screen. New accounts start empty.
-4. **Persistent session/routes:** refresh `/tasks`, `/habits` and `/settings` while signed in. Close/reopen the app. Expect a session loading state followed by the protected screen, without requiring login again. Visit `/login` when signed in; expect the app. Test direct routes on your deployed web host as well.
+4. **Persistent session/routes:** refresh `/tasks`, `/habits` and `/settings` while signed in. Close/reopen the app. Expect a session loading state followed by the protected screen, without requiring login again. Visit `/login` when signed in; expect the app. Open `/welcome` while signed in and use Continue to Dashboard; the two progress cards, upcoming tasks and today's habits must remain visible, including their loading/empty states. Test direct routes on your deployed web host as well.
 5. **Tasks:** add one undated medium task, one high-priority task due today and one low-priority task due tomorrow. Try a blank title and impossible date (e.g. `2026-02-30`); they must not save. Check Today/Upcoming/All filters, due-date/priority sorting, rename/edit priority/date, clear date, complete, Completed filter, and undo completion. Check Dashboard task percentage changes. Click Delete then Cancel: task remains. Confirm Delete: task disappears. Refresh/reopen and verify the surviving edits. Inspect your `tasks` rows for UUID owner/status/timestamps.
 6. **Habits:** add one habit including today's weekday and one excluding it. Expect scheduled/rest-day labels and Dashboard denominator of 1. Check/uncheck the scheduled habit; percentage changes 0→100→0. The rest-day check-in must be disabled. Edit its name and weekdays, including removal/addition of today; totals update and prior history stays intact. Empty names/zero weekdays cannot save. Check This week/Previous week/Next week limits and consistency text. Cancel deletion retains the habit; confirming deletes it and its completion rows. Refresh/reopen to verify remaining habits/history.
 7. **Cross-device sync:** log A into another device/browser. Create/edit/complete/delete a task on device 1; on device 2 click Settings → Sync now or wait up to 30 seconds. Repeat for habit edits/check-in/undo/deletion. Check Dashboard and weekly grid agree. Use matching device timezones. After both devices finish writes, refresh both to verify the final saved values.
