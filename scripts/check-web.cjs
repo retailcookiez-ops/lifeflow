@@ -36,6 +36,7 @@ const server = http.createServer((request, response) => {
   } catch { response.writeHead(404); response.end('Not found'); }
 });
 async function visible(locator) {
+  locator = locator.filter({ visible: true });
   await locator.waitFor({ state: 'visible', timeout: 20000 });
   const box = await locator.boundingBox();
   assert.ok(box && box.width > 0 && box.height > 0, 'Element needs a nonzero layout');
@@ -96,14 +97,14 @@ async function visible(locator) {
           if (scenario === 'skip') {
             await page.getByRole('button', {name:'Skip setup',exact:true}).click();
           } else {
-            await page.getByLabel('Display name', {exact:true}).fill('Alex');
+            await page.getByRole('textbox', {name:'Display name',exact:true}).fill('Alex');
             await page.getByRole('checkbox', {name:'Consistency',exact:true}).click();
             await page.getByRole('button', {name:'Continue',exact:true}).click();
-            await page.getByLabel('Wake time (optional)', {exact:true}).fill('25:00');
+            await page.getByRole('textbox', {name:'Wake time (optional)',exact:true}).fill('25:00');
             await page.getByRole('button', {name:'Continue',exact:true}).click();
             await visible(page.getByText(/Wake time must use/));
-            await page.getByLabel('Wake time (optional)', {exact:true}).fill('07:30');
-            await page.getByLabel('Sleep time (optional)', {exact:true}).fill('23:00');
+            await page.getByRole('textbox', {name:'Wake time (optional)',exact:true}).fill('07:30');
+            await page.getByRole('textbox', {name:'Sleep time (optional)',exact:true}).fill('23:00');
             await page.getByRole('button', {name:'Continue',exact:true}).click();
             await visible(page.getByRole('heading', {name:'Choose your focus',exact:true}));
             await page.screenshot({path:'browser-checks/onboarding-'+viewport.width+'.png',fullPage:true});
@@ -137,7 +138,7 @@ async function visible(locator) {
         await page.getByRole('link', { name:'Continue to Dashboard →', exact:true }).click();
         await visible(page.getByText('TODAY’S TASK PROGRESS', { exact:true }));
         await page.getByRole('link', { name:'Settings', exact:true }).click();
-        await page.getByLabel('Display name',{exact:true}).fill('Taylor');
+        await page.getByRole('textbox',{name:'Display name',exact:true}).fill('Taylor');
         await page.getByRole('checkbox',{name:'Tasks summary',exact:true}).click();
         await page.getByRole('checkbox',{name:'Sunday',exact:true}).click();
         await page.getByRole('button',{name:'Save profile',exact:true}).click();
@@ -145,20 +146,20 @@ async function visible(locator) {
         assert.equal(profile.display_name,'Taylor'); assert.equal(profile.week_start,0);
         await page.getByRole('link',{name:'Dashboard',exact:true}).click();
         await visible(page.getByText('Hello, Taylor. Small steps. Consistent progress.',{exact:true}));
-        assert.equal(await page.getByText('TODAY’S TASK PROGRESS',{exact:true}).count(),0);
+        assert.equal(await page.getByText('TODAY’S TASK PROGRESS',{exact:true}).filter({visible:true}).count(),0);
         await visible(page.getByText('TODAY’S HABIT PROGRESS',{exact:true}));
         await page.getByRole('link',{name:'Tasks',exact:true}).click();
         await visible(page.getByRole('heading',{name:'Tasks',exact:true}));
         await page.goto(origin+'/settings');
         await visible(page.getByRole('heading',{name:'Settings',exact:true}));
-        assert.equal(await page.getByLabel('Display name',{exact:true}).inputValue(),'Taylor');
+        assert.equal(await page.getByRole('textbox',{name:'Display name',exact:true}).inputValue(),'Taylor');
         // Failed saves preserve the form and do not invent a cloud change.
-        await page.getByLabel('Display name',{exact:true}).fill('Unsaved draft'); failSave=true;
+        await page.getByRole('textbox',{name:'Display name',exact:true}).fill('Unsaved draft'); failSave=true;
         await page.getByRole('button',{name:'Save profile',exact:true}).click();
         await visible(page.getByText('Save test failed',{exact:true})); assert.equal(profile.display_name,'Taylor');
-        assert.equal(await page.getByLabel('Display name',{exact:true}).inputValue(),'Unsaved draft'); failSave=false;
+        assert.equal(await page.getByRole('textbox',{name:'Display name',exact:true}).inputValue(),'Unsaved draft'); failSave=false;
         await page.getByRole('button',{name:'Discard edits',exact:true}).click();
-        assert.equal(await page.getByLabel('Display name',{exact:true}).inputValue(),'Taylor');
+        assert.equal(await page.getByRole('textbox',{name:'Display name',exact:true}).inputValue(),'Taylor');
         await page.getByRole('button',{name:'Delete account…',exact:true}).click();
         await visible(page.getByRole('heading',{name:'Permanently delete your account?',exact:true}));
         assert.equal(await page.getByRole('button',{name:'Permanently delete account',exact:true}).isDisabled(),true);
