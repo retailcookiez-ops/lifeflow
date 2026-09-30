@@ -1,25 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type Task = { id: string; title: string; done: boolean };
-const STORAGE_KEY = 'lifeflow.tasks.v1';
+import { parseTasks, validFields, type Task, type TaskFields } from '@/utils/tasks';
 
-function parseTasks(raw: string | null): Task[] {
-  if (raw === null) return [];
-  const value: unknown = JSON.parse(raw);
-  if (!Array.isArray(value)) throw new Error('Invalid task data');
-  const ids = new Set<string>();
-  return value.map((item: unknown) => {
-    if (!item || typeof item !== 'object') throw new Error('Invalid task');
-    const task = item as Record<string, unknown>;
-    if (typeof task.id !== 'string' || !task.id || ids.has(task.id) ||
-        typeof task.title !== 'string' || !task.title.trim() || typeof task.done !== 'boolean') {
-      throw new Error('Invalid task');
-    }
-    ids.add(task.id);
-    return { id: task.id, title: task.title.trim(), done: task.done };
-  });
-}
+const STORAGE_KEY = 'lifeflow.tasks.v1';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,14 +49,14 @@ export function useTasks() {
     });
   }, [tasks, ready, retry]);
 
-  function addTask(title: string) {
-    if (!ready || !title.trim()) return;
+  function addTask(fields: TaskFields) {
+    if (!ready || !validFields(fields)) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setTasks(old => [...old, { id, title: title.trim(), done: false }]);
+    setTasks(old => [...old, { ...fields, id, title: fields.title.trim(), done: false }]);
   }
-  function editTask(id: string, title: string) {
-    if (!ready || !title.trim()) return;
-    setTasks(old => old.map(task => task.id === id ? { ...task, title: title.trim() } : task));
+  function editTask(id: string, fields: TaskFields) {
+    if (!ready || !validFields(fields)) return;
+    setTasks(old => old.map(task => task.id === id ? { ...task, ...fields, title: fields.title.trim() } : task));
   }
   function deleteTask(id: string) {
     if (ready) setTasks(old => old.filter(task => task.id !== id));
