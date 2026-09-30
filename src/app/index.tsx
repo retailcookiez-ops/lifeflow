@@ -8,7 +8,10 @@ import {
   Text,
   View,
   Pressable,
+  TextInput,
 } from "react-native";
+
+import { useTasks } from "@/hooks/use-tasks";
 
 const GREEN = "#8BE9C0";
 const BG = "#0C1015";
@@ -16,11 +19,17 @@ const CARD = "#171E27";
 const MUTED = "#9CA8B5";
 
 export default function HomeScreen() {
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Finish school assignments", done: false },
-    { id: 2, title: "Complete gym session", done: false },
-    { id: 3, title: "Read for 20 minutes", done: true },
-  ]);
+  const { tasks, ready, error, saving, addTask, editTask, deleteTask, toggleTask, retry } = useTasks();
+  const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function submitTask() {
+    if (!draft.trim() || !ready) return;
+    addTask(draft);
+    setDraft("");
+  }
 
   const [habits, setHabits] = useState([
     { id: 1, title: "Drink enough water", icon: "💧", done: true },
@@ -37,7 +46,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.header}>
           <View>
             <Text style={styles.logo}>
@@ -84,32 +93,81 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.section}>Today's tasks</Text>
+        <Text style={styles.section}>Today&apos;s tasks</Text>
         <View style={styles.card}>
-          {tasks.map((task) => (
-            <Pressable
-              key={task.id}
-              style={styles.item}
-              onPress={() =>
-                setTasks((old) =>
-                  old.map((t) =>
-                    t.id === task.id ? { ...t, done: !t.done } : t
-                  )
-                )
-              }
-            >
-              <View style={[styles.checkbox, task.done && styles.checked]}>
-                {task.done && <Text style={styles.check}>✓</Text>}
-              </View>
-              <Text
-                style={[
-                  styles.itemText,
-                  task.done && styles.strikethrough,
-                ]}
-              >
-                {task.title}
-              </Text>
+          <TextInput
+            accessibilityLabel="New task title"
+            placeholder="What do you need to do?"
+            placeholderTextColor={MUTED}
+            selectionColor={GREEN}
+            style={styles.taskInput}
+            value={draft}
+            onChangeText={setDraft}
+            editable={ready}
+            maxLength={200}
+            returnKeyType="done"
+            onSubmitEditing={submitTask}
+          />
+          <Pressable accessibilityRole="button" disabled={!ready || !draft.trim()}
+            style={[styles.addButton, (!ready || !draft.trim()) && styles.disabled]}
+            onPress={submitTask}>
+            <Text style={styles.addLabel}>+ Add task</Text>
+          </Pressable>
+          <Text style={styles.muted} accessibilityLiveRegion="polite">
+            {!ready ? (error ? "Tasks unavailable" : "Loading tasks…") : saving ? "Saving…" : error ? "Changes not saved" : "All tasks saved"}
+          </Text>
+          {error && <View>
+            <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+            <Pressable accessibilityRole="button" style={styles.action} onPress={retry}>
+              <Text style={styles.actionLabel}>Retry</Text>
             </Pressable>
+          </View>}
+          {ready && tasks.length === 0 && <Text style={[styles.muted, { marginTop: 16 }]}>No tasks yet. Add your first task above.</Text>}
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskRow}>
+              {editingId === task.id ? <View>
+                <TextInput accessibilityLabel="Edit task title" style={styles.taskInput}
+                  value={editTitle} onChangeText={setEditTitle} maxLength={200}
+                  selectionColor={GREEN} autoFocus returnKeyType="done"
+                  onSubmitEditing={() => { if (editTitle.trim()) { editTask(task.id, editTitle); setEditingId(null); } }} />
+                <View style={styles.actions}>
+                  <Pressable accessibilityRole="button" style={styles.action} disabled={!editTitle.trim()}
+                    onPress={() => { editTask(task.id, editTitle); setEditingId(null); }}>
+                    <Text style={[styles.actionLabel, !editTitle.trim() && styles.disabled]}>Save</Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" style={styles.action} onPress={() => setEditingId(null)}>
+                    <Text style={styles.muted}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </View> : <>
+                <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: task.done }}
+                  accessibilityLabel={task.title} style={styles.taskToggle} onPress={() => toggleTask(task.id)}>
+                  <View style={[styles.checkbox, task.done && styles.checked]}>
+                    {task.done && <Text style={styles.check}>✓</Text>}
+                  </View>
+                  <Text style={[styles.itemText, task.done && styles.strikethrough]}>{task.title}</Text>
+                </Pressable>
+                <View style={styles.actions}>
+                  {deletingId === task.id ? <>
+                    <Text style={styles.muted}>Delete this task?</Text>
+                    <Pressable accessibilityRole="button" style={styles.action} onPress={() => { deleteTask(task.id); setDeletingId(null); }}>
+                      <Text style={styles.error}>Delete</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" style={styles.action} onPress={() => setDeletingId(null)}>
+                      <Text style={styles.muted}>Cancel</Text>
+                    </Pressable>
+                  </> : <>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${task.title}`} style={styles.action}
+                      onPress={() => { setEditingId(task.id); setEditTitle(task.title); setDeletingId(null); }}>
+                      <Text style={styles.actionLabel}>Edit</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Delete ${task.title}`} style={styles.action} onPress={() => setDeletingId(task.id)}>
+                      <Text style={styles.muted}>Delete</Text>
+                    </Pressable>
+                  </>}
+                </View>
+              </>}
+            </View>
           ))}
         </View>
 
@@ -162,6 +220,16 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  taskInput: { color: "#F4F7FA", backgroundColor: BG, borderColor: "#28323D", borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 48, marginBottom: 8, fontSize: 14 },
+  addButton: { backgroundColor: GREEN, borderRadius: 10, padding: 12, alignItems: "center", marginBottom: 12, minHeight: 44 },
+  addLabel: { color: BG, fontWeight: "bold" },
+  disabled: { opacity: 0.4 },
+  taskRow: { borderBottomWidth: 1, borderBottomColor: "#28323D", paddingVertical: 10 },
+  taskToggle: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44 },
+  actions: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12, marginLeft: 34 },
+  action: { minHeight: 44, justifyContent: "center", paddingHorizontal: 4 },
+  actionLabel: { color: GREEN, fontSize: 13, fontWeight: "bold" },
+  error: { color: "#FF9C9C", fontSize: 13, lineHeight: 20 },
   safe: {
     flex: 1,
     backgroundColor: BG,
