@@ -20,10 +20,10 @@ export function shiftDate(day: string, amount: number): string {
   date.setDate(date.getDate() + amount);
   return localDate(date);
 }
-export function weekDates(today: string, offset = 0): string[] {
+export function weekDates(today: string, offset = 0, weekStart: 0 | 1 = 1): string[] {
   const weekday = dateObject(today).getDay();
-  const monday = shiftDate(today, -((weekday + 6) % 7) + offset * 7);
-  return Array.from({ length: 7 }, (_, i) => shiftDate(monday, i));
+  const start = shiftDate(today, -((weekday - weekStart + 7) % 7) + offset * 7);
+  return Array.from({ length: 7 }, (_, i) => shiftDate(start, i));
 }
 export function validWeekdays(value: unknown): value is Weekday[] {
   return Array.isArray(value) && value.length > 0 && value.length <= 7 &&

@@ -2,6 +2,8 @@
 
 The app now requires an account. Supabase is the source of truth for tasks, habits and daily completions. The original local records are retained for explicit import. No demo records are created or marked complete.
 
+> The onboarding/profile update also requires migration `202609300002_profiles_onboarding.sql`. Follow [ONBOARDING_SETUP.md](ONBOARDING_SETUP.md) after the base setup below.
+
 ## 1. Get the updated code
 
 Changes are on `feat/persistent-tasks` (PR #1), not `main`. In your LifeFlow project folder, run these commands individually. Keep your existing local data and do not run `reset-project`, clear browser storage or uninstall the app before importing.
@@ -24,7 +26,7 @@ If Git reports local edits or a conflict, preserve those edits before switching.
 5. For testing with Supabase's built-in email sender, use an address allowed by the project's current email restrictions. Configure a custom SMTP provider before testing with general users. If signup reports an email delivery/rate-limit error, fix email settings rather than RLS. Production confirmation links require a reachable web URL, not a desktop-only localhost URL.
 6. In Project Settings → API / API Keys, copy your project URL and **publishable** key beginning `sb_publishable_`. Do not copy a secret/service-role key. This app deliberately accepts the publishable format only.
 
-The migration creates profiles automatically on signup and backfills existing accounts. It stores the optional display name and a validated timezone. There is no profile editing screen yet.
+The migration creates profiles automatically on signup and backfills existing accounts. It stores the optional display name and a validated timezone. Profiles can now be edited in Settings after applying migration 002.
 
 ## 3. Environment variables
 

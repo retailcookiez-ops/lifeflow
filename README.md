@@ -20,3 +20,7 @@ npx expo export --platform web
 ```
 
 Start Expo once to regenerate typed routes before typechecking after route changes. Do not clear existing app storage before importing old data.
+
+## Onboarding and profile settings
+
+See [onboarding setup and testing](docs/ONBOARDING_SETUP.md). Apply migration `202609300002_profiles_onboarding.sql` after the original database migration before running the updated app. Account deletion additionally requires deploying the included server-side Edge Function.

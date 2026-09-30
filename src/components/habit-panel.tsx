@@ -1,3 +1,4 @@
+import { useProfile } from '@/providers/profile-provider';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { useCloudHabits } from '@/hooks/use-cloud-habits';
@@ -58,7 +59,8 @@ export function HabitPanel({ system }: { system: ReturnType<typeof useCloudHabit
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const editing = habits.find(habit => habit.id === editingId);
-  const dates = weekDates(today, weekOffset);
+  const { profile } = useProfile();
+  const dates = weekDates(today, weekOffset, profile?.week_start ?? 1);
   return <View>
     <HabitForm disabled={!ready || saving} onSave={addHabit} />
     <Text style={styles.muted} accessibilityLiveRegion="polite">

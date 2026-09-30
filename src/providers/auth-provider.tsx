@@ -8,7 +8,7 @@ import { validateAuth } from '@/utils/auth';
 type AuthState = { session: Session | null; loading: boolean; error: string | null; configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<boolean>;
-  signOut: () => Promise<void>; retry: () => Promise<void> };
+  signOut: () => Promise<void>; endDeletedSession: () => Promise<void>; retry: () => Promise<void> };
 const Context = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -72,7 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.error) throw result.error;
     setSession(null);
   }
-  return <Context.Provider value={{ session, loading, error, configured: !!supabase, signIn, signUp, signOut, retry }}>{children}</Context.Provider>;
+  async function endDeletedSession() {
+    // The server has already confirmed deletion. Always leave protected routes.
+    try { await getSupabase().auth.signOut({ scope: 'local' }); } finally { setSession(null); }
+  }
+  return <Context.Provider value={{ session, loading, error, configured: !!supabase, signIn, signUp, signOut, endDeletedSession, retry }}>{children}</Context.Provider>;
 }
 export function useAuth() {
   const value = useContext(Context);

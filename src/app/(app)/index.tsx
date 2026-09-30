@@ -1,3 +1,4 @@
+import { useProfile } from '@/providers/profile-provider';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LifeFlowScreen, screenStyles } from '@/components/lifeflow-screen';
@@ -23,26 +24,30 @@ function ProgressCard({ label, done, total, percentage, ready, description }: {
 }
 export default function DashboardScreen() {
   const { taskSystem, habitSystem } = useLifeFlow();
+  const { profile } = useProfile();
+  const showTasks = profile?.modules.includes('tasks') ?? true;
+  const showHabits = profile?.modules.includes('habits') ?? true;
   const { today } = habitSystem;
   const tasks = dashboardTasks(taskSystem.tasks, today);
   const habits = habitSystem.habits.filter(habit => scheduledOn(habit, today));
-  return <LifeFlowScreen title="Today" eyebrow="YOUR DASHBOARD" subtitle="Small steps. Consistent progress.">
+  return <LifeFlowScreen title="Today" eyebrow="YOUR DASHBOARD" subtitle={profile?.display_name ? `Hello, ${profile.display_name}. Small steps. Consistent progress.` : 'Small steps. Consistent progress.'}>
     {(taskSystem.error || habitSystem.error) && <View style={screenStyles.card}>
       <Text style={styles.error}>{taskSystem.error || habitSystem.error}</Text>
       <SectionLink href={taskSystem.error ? '/tasks' : '/habits'} label="Review and retry" />
     </View>}
-    <ProgressCard label="TODAY’S TASK PROGRESS" {...tasks} ready={taskSystem.ready}
-      description="Tasks due today or earlier, plus tasks without a due date." />
-    <ProgressCard label="TODAY’S HABIT PROGRESS" {...habitSystem.progress} ready={habitSystem.ready}
-      description={habitSystem.ready && habits.length === 0 ? 'No habits scheduled today.' : 'Only habits scheduled for today count.'} />
-    <View style={styles.sectionHeader}><Text style={screenStyles.section}>Upcoming tasks</Text><SectionLink href="/tasks" label="View all tasks" /></View>
+    {showTasks && <ProgressCard label="TODAY’S TASK PROGRESS" {...tasks} ready={taskSystem.ready}
+      description="Tasks due today or earlier, plus tasks without a due date." />}
+    {showHabits && <ProgressCard label="TODAY’S HABIT PROGRESS" {...habitSystem.progress} ready={habitSystem.ready}
+      description={habitSystem.ready && habits.length === 0 ? 'No habits scheduled today.' : 'Only habits scheduled for today count.'} />}
+    {showTasks && <><View style={styles.sectionHeader}><Text style={screenStyles.section}>Upcoming tasks</Text><SectionLink href="/tasks" label="View all tasks" /></View>
     <View style={screenStyles.card}>
       {!taskSystem.ready ? <Text style={screenStyles.muted}>Loading tasks…</Text> : tasks.upcoming.length === 0 ?
         <Text style={screenStyles.muted}>No upcoming tasks. Plan your next step in Tasks.</Text> : tasks.upcoming.map(task =>
           <View key={task.id} style={styles.row}><Text style={styles.itemTitle}>{task.title}</Text>
             <Text style={screenStyles.muted}>Due {task.dueDate} · {task.priority} priority</Text></View>)}
     </View>
-    <View style={styles.sectionHeader}><Text style={screenStyles.section}>Today’s habits</Text><SectionLink href="/habits" label="View all habits" /></View>
+    </>}
+    {showHabits && <><View style={styles.sectionHeader}><Text style={screenStyles.section}>Today’s habits</Text><SectionLink href="/habits" label="View all habits" /></View>
     <View style={screenStyles.card}>
       {!habitSystem.ready ? <Text style={screenStyles.muted}>Loading habits…</Text> : habits.length === 0 ?
         <Text style={screenStyles.muted}>No habits scheduled today. Set your routine in Habits.</Text> : habits.slice(0, 3).map(habit =>
@@ -50,6 +55,11 @@ export default function DashboardScreen() {
             <Text style={{ color: habit.completions.includes(today) ? '#8BE9C0' : '#9CA8B5' }}>{habit.completions.includes(today) ? '✓ Complete today' : '○ Pending today'}</Text></View>)}
       {habits.length > 3 && <Text style={[screenStyles.muted, { marginTop: 12 }]}>+{habits.length - 3} more scheduled habits</Text>}
     </View>
+    </>}
+    {!showTasks && !showHabits && <View style={screenStyles.card}><Text style={screenStyles.label}>A little space to focus</Text>
+      <Text style={screenStyles.muted}>Your dashboard summaries are hidden. Your tasks and habits are still available in navigation.</Text>
+      <Link href="/settings" style={styles.linkText}>Choose dashboard modules in Settings →</Link>
+    </View>}
   </LifeFlowScreen>;
 }
 const styles = StyleSheet.create({

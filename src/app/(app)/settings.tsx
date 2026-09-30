@@ -1,3 +1,6 @@
+import { ProfileEditor } from '@/components/profile-editor';
+import { DeleteAccountPanel } from '@/components/delete-account-panel';
+import { useProfile } from '@/providers/profile-provider';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -9,10 +12,11 @@ import { friendlyError } from '@/lib/errors';
 export default function SettingsScreen() {
   const { taskSystem, habitSystem } = useLifeFlow();
   const { session, signOut } = useAuth();
+  const { saving: profileSaving, reload: reloadProfile } = useProfile();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const saving = taskSystem.saving || habitSystem.saving;
-  async function sync() { await Promise.all([taskSystem.reload(), habitSystem.reload()]); }
+  const saving = taskSystem.saving || habitSystem.saving || profileSaving;
+  async function sync() { await Promise.all([taskSystem.reload(), habitSystem.reload(), reloadProfile()]); }
   async function logout() {
     if (busy || saving) return;
     setBusy(true); setError(null);
@@ -30,6 +34,7 @@ export default function SettingsScreen() {
       </Pressable>
       {error && <Text accessibilityRole="alert" style={{ color: '#FF9C9C' }}>{error}</Text>}
     </View>
+    <ProfileEditor />
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Cloud storage</Text>
       <Text style={screenStyles.muted}>Tasks, habits and check-ins belong to your account. Changes save to Supabase before the screen updates. An internet connection is required.</Text>
@@ -43,12 +48,19 @@ export default function SettingsScreen() {
     </View>
     <LocalImportPanel email={session?.user.email ?? 'this account'} disabled={saving || busy} onImported={sync} />
     <View style={screenStyles.card}>
-      <Text style={screenStyles.label}>Appearance</Text><Text style={screenStyles.muted}>LifeFlow dark theme</Text>
+      <Text style={screenStyles.label}>Appearance</Text><Text style={screenStyles.muted}>Dark · Active</Text>
+      <Text accessibilityState={{ disabled: true }} style={[screenStyles.muted, { opacity: 0.6, marginTop: 8 }]}>Light · Coming later</Text>
     </View>
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Calendar and history</Text>
       <Text style={screenStyles.muted}>Daily habit check-ins use your device’s local date. Use the same timezone on your devices for matching daily totals. Task due dates remain calendar dates. Habit schedule changes preserve earlier history.</Text>
     </View>
+    <View style={screenStyles.card}>
+      <Text style={screenStyles.label}>Privacy and your data</Text>
+      <Text style={screenStyles.muted}>Your profile, tasks, habits and check-ins are stored in your Supabase account. Owner-only database policies protect access. No AI processing or social sharing is used.</Text>
+      <Text style={[screenStyles.muted, { marginTop: 10 }]}>Logging out keeps your cloud data. Older local data stays on this device until you choose to import it; deleting your account does not erase those local backups.</Text>
+    </View>
+    <DeleteAccountPanel disabled={saving || busy} />
     <View style={screenStyles.card}><Text style={screenStyles.label}>About LifeFlow</Text><Text style={screenStyles.muted}>Version 1.0.0 · Small steps. Consistent progress.</Text></View>
   </LifeFlowScreen>;
 }

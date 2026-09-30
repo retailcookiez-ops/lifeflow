@@ -1,0 +1,4 @@
+# The handler verifies the bearer token with Supabase Auth and rechecks the password.
+# Explicit verification supports projects with both asymmetric and legacy signing keys.
+[functions.delete-account]
+verify_jwt = false
