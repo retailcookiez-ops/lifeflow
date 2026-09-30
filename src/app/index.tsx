@@ -1,239 +1,66 @@
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LifeFlowScreen, screenStyles } from '@/components/lifeflow-screen';
+import { useLifeFlow } from '@/providers/lifeflow-provider';
+import { dashboardTasks } from '@/utils/dashboard';
+import { scheduledOn } from '@/utils/habits';
 
-import React from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-
-import { HabitPanel } from "@/components/habit-panel";
-import { useHabits } from "@/hooks/use-habits";
-import { TaskPanel } from "@/components/task-panel";
-import { useTasks } from "@/hooks/use-tasks";
-
-const GREEN = "#8BE9C0";
-const BG = "#0C1015";
-const CARD = "#171E27";
-const MUTED = "#9CA8B5";
-
-export default function HomeScreen() {
-  const taskSystem = useTasks();
-  const { tasks } = taskSystem;
-
-  const habitSystem = useHabits();
-  const habitProgress = habitSystem.progress;
-
-  const tasksDone = tasks.filter((t) => t.done).length;
-  const progress = tasks.length
-    ? (tasksDone / tasks.length) * 100
-    : 0;
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.logo}>
-              LIFE<Text style={{ color: GREEN }}>FLOW</Text>
-            </Text>
-            <Text style={styles.muted}>Your personal growth space</Text>
-          </View>
-          <View style={styles.avatar}>
-            <Text style={{ color: GREEN, fontWeight: "bold" }}>Y</Text>
-          </View>
-        </View>
-
-        <Text style={styles.eyebrow}>YOUR DASHBOARD</Text>
-        <Text style={styles.heading}>Today</Text>
-        <Text style={[styles.muted, { marginBottom: 24 }]}>
-          Small steps. Consistent progress.
-        </Text>
-
-        <View style={styles.card}>
-          <Text style={styles.eyebrow}>DAILY PROGRESS</Text>
-          <Text style={styles.percentage}>{Math.round(progress)}%</Text>
-          <Text style={styles.muted}>
-            {tasksDone} of {tasks.length} tasks completed
-          </Text>
-          <View style={styles.track}>
-            <View
-              style={[styles.fill, { width: `${progress}%` }]}
-            />
-          </View>
-        </View>
-
-        <View style={styles.stats}>
-          <View style={[styles.card, styles.stat]}>
-            <Text style={styles.statNumber}>
-              {tasksDone}/{tasks.length}
-            </Text>
-            <Text style={styles.muted}>Tasks completed</Text>
-          </View>
-          <View style={[styles.card, styles.stat]}>
-            <Text style={styles.statNumber}>
-              {habitSystem.ready ? `${habitProgress.done}/${habitProgress.total}` : "—"}
-            </Text>
-            <Text style={styles.muted}>Today’s scheduled habits</Text>
-            <Text style={styles.muted}>{habitSystem.ready ? `${habitProgress.percentage}% complete` : "Loading…"}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.section}>Your tasks</Text>
-        <View style={styles.card}><TaskPanel system={taskSystem} /></View>
-
-        <Text style={styles.section}>Daily habits</Text>
-        <View style={styles.card}><HabitPanel system={habitSystem} /></View>
-
-        <Text style={styles.section}>Your AI coach</Text>
-        <View style={[styles.card, styles.aiCard]}>
-          <Text style={{ color: "#A9B8FF", fontWeight: "bold" }}>
-            ✦ LIFEFLOW INTELLIGENCE
-          </Text>
-          <Text style={styles.aiTitle}>
-            Focus on one thing at a time.
-          </Text>
-          <Text style={styles.muted}>
-            Start with your next task. A little progress now can
-            help build momentum for the rest of your day.
-          </Text>
-          <Text style={styles.aiNote}>
-            DEMO SUGGESTION — NOT AI-GENERATED
-          </Text>
-        </View>
-
-        <Text style={styles.footer}>
-          LIFEFLOW · YOUR PROGRESS, CONNECTED.
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
-  );
+function SectionLink({ href, label }: { href: '/tasks' | '/habits'; label: string }) {
+  return <Link href={href} asChild><Pressable accessibilityRole="link" style={styles.link}>
+    <Text style={styles.linkText}>{label} →</Text>
+  </Pressable></Link>;
 }
-
+function ProgressCard({ label, done, total, percentage, ready, description }: {
+  label: string; done: number; total: number; percentage: number; ready: boolean; description: string;
+}) {
+  return <View style={screenStyles.card}>
+    <Text style={styles.eyebrow}>{label}</Text>
+    <Text style={styles.percentage}>{ready ? `${percentage}%` : '—'}</Text>
+    <Text style={screenStyles.muted}>{ready ? `${done} of ${total} completed` : 'Loading saved data…'}</Text>
+    <View style={styles.track}><View style={[styles.fill, { width: `${ready ? percentage : 0}%` }]} /></View>
+    <Text style={[screenStyles.muted, { marginTop: 12 }]}>{description}</Text>
+  </View>;
+}
+export default function DashboardScreen() {
+  const { taskSystem, habitSystem } = useLifeFlow();
+  const { today } = habitSystem;
+  const tasks = dashboardTasks(taskSystem.tasks, today);
+  const habits = habitSystem.habits.filter(habit => scheduledOn(habit, today));
+  return <LifeFlowScreen title="Today" eyebrow="YOUR DASHBOARD" subtitle="Small steps. Consistent progress.">
+    {(taskSystem.error || habitSystem.error) && <View style={screenStyles.card}>
+      <Text style={styles.error}>{taskSystem.error || habitSystem.error}</Text>
+      <SectionLink href={taskSystem.error ? '/tasks' : '/habits'} label="Review and retry" />
+    </View>}
+    <ProgressCard label="TODAY’S TASK PROGRESS" {...tasks} ready={taskSystem.ready}
+      description="Tasks due today or earlier, plus tasks without a due date." />
+    <ProgressCard label="TODAY’S HABIT PROGRESS" {...habitSystem.progress} ready={habitSystem.ready}
+      description={habitSystem.ready && habits.length === 0 ? 'No habits scheduled today.' : 'Only habits scheduled for today count.'} />
+    <View style={styles.sectionHeader}><Text style={screenStyles.section}>Upcoming tasks</Text><SectionLink href="/tasks" label="View all tasks" /></View>
+    <View style={screenStyles.card}>
+      {!taskSystem.ready ? <Text style={screenStyles.muted}>Loading tasks…</Text> : tasks.upcoming.length === 0 ?
+        <Text style={screenStyles.muted}>No upcoming tasks. Plan your next step in Tasks.</Text> : tasks.upcoming.map(task =>
+          <View key={task.id} style={styles.row}><Text style={styles.itemTitle}>{task.title}</Text>
+            <Text style={screenStyles.muted}>Due {task.dueDate} · {task.priority} priority</Text></View>)}
+    </View>
+    <View style={styles.sectionHeader}><Text style={screenStyles.section}>Today’s habits</Text><SectionLink href="/habits" label="View all habits" /></View>
+    <View style={screenStyles.card}>
+      {!habitSystem.ready ? <Text style={screenStyles.muted}>Loading habits…</Text> : habits.length === 0 ?
+        <Text style={screenStyles.muted}>No habits scheduled today. Set your routine in Habits.</Text> : habits.slice(0, 3).map(habit =>
+          <View key={habit.id} style={styles.row}><Text style={styles.itemTitle}>{habit.title}</Text>
+            <Text style={{ color: habit.completions.includes(today) ? '#8BE9C0' : '#9CA8B5' }}>{habit.completions.includes(today) ? '✓ Complete today' : '○ Pending today'}</Text></View>)}
+      {habits.length > 3 && <Text style={[screenStyles.muted, { marginTop: 12 }]}>+{habits.length - 3} more scheduled habits</Text>}
+    </View>
+  </LifeFlowScreen>;
+}
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  container: {
-    padding: 22,
-    paddingTop: 35,
-    paddingBottom: 50,
-    width: "100%",
-    maxWidth: 760,
-    alignSelf: "center",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  logo: {
-    color: "#F4F7FA",
-    fontSize: 22,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
-  muted: {
-    color: MUTED,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    backgroundColor: CARD,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  eyebrow: {
-    color: GREEN,
-    fontSize: 11,
-    fontWeight: "bold",
-    letterSpacing: 2,
-  },
-  heading: {
-    color: "#F4F7FA",
-    fontSize: 38,
-    fontWeight: "800",
-    marginTop: 8,
-  },
-  card: {
-    backgroundColor: CARD,
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#28323D",
-  },
-  percentage: {
-    color: GREEN,
-    fontSize: 40,
-    fontWeight: "800",
-    marginTop: 8,
-  },
-  track: {
-    height: 7,
-    backgroundColor: "#202A35",
-    borderRadius: 10,
-    overflow: "hidden",
-    marginTop: 20,
-  },
-  fill: {
-    height: "100%",
-    backgroundColor: GREEN,
-    borderRadius: 10,
-  },
-  stats: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 25,
-  },
-  stat: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  statNumber: {
-    color: "#F4F7FA",
-    fontSize: 25,
-    fontWeight: "800",
-    marginBottom: 5,
-  },
-  section: {
-    color: "#F4F7FA",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 15,
-    marginBottom: 14,
-  },
-  aiCard: {
-    backgroundColor: "#191D2C",
-    borderColor: "#34374F",
-    marginTop: 0,
-  },
-  aiTitle: {
-    color: "#F4F7FA",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  aiNote: {
-    color: "#A9B8FF",
-    fontSize: 10,
-    marginTop: 18,
-    fontWeight: "bold",
-  },
-  footer: {
-    color: "#65717F",
-    fontSize: 10,
-    textAlign: "center",
-    marginTop: 25,
-    letterSpacing: 1,
-  },
+  eyebrow: { color: '#8BE9C0', fontSize: 11, fontWeight: 'bold', letterSpacing: 2 },
+  percentage: { color: '#8BE9C0', fontSize: 40, fontWeight: '800', marginTop: 8 },
+  track: { height: 7, backgroundColor: '#202A35', borderRadius: 10, overflow: 'hidden', marginTop: 20 },
+  fill: { height: '100%', backgroundColor: '#8BE9C0', borderRadius: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
+  link: { minHeight: 44, justifyContent: 'center', paddingVertical: 10 },
+  linkText: { color: '#8BE9C0', fontSize: 13, fontWeight: '600' },
+  row: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#28323D', gap: 6 },
+  itemTitle: { color: '#F4F7FA', fontSize: 14, fontWeight: '600' },
+  error: { color: '#FF9C9C', fontSize: 13, lineHeight: 20 },
 });

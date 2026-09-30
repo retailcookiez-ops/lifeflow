@@ -42,7 +42,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test:tasks": "node --test tests/tasks.test.cjs",
-    "test:habits": "node --test tests/habits.test.cjs tests/habit-storage.test.cjs"
+    "test:habits": "node --test tests/habits.test.cjs tests/habit-storage.test.cjs",
+    "test:dashboard": "node --test tests/dashboard.test.cjs"
   },
   "private": true
 }
