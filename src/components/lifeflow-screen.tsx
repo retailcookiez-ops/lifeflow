@@ -6,7 +6,7 @@ export function LifeFlowScreen({ title, eyebrow, subtitle, children }: {
   title: string; eyebrow: string; subtitle: string; children: ReactNode;
 }) {
   return <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
-    <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.container}>
+    <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <View><Text style={styles.logo}>LIFE<Text style={{ color: '#8BE9C0' }}>FLOW</Text></Text>
           <Text style={styles.muted}>Your personal growth space</Text></View>
@@ -27,7 +27,8 @@ export const screenStyles = StyleSheet.create({
   label: { color: '#F4F7FA', fontSize: 15, fontWeight: '700', marginBottom: 8 },
 });
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#0C1015' },
+  scroll: { flex: 1, minHeight: 0 },
+  safe: { flex: 1, minHeight: 0, backgroundColor: '#0C1015' },
   container: { padding: 22, paddingTop: 35, paddingBottom: 32, width: '100%', maxWidth: 760, alignSelf: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 },
   logo: { color: '#F4F7FA', fontSize: 22, fontWeight: '900', letterSpacing: 2 },
