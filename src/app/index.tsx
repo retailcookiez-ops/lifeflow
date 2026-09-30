@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -7,9 +7,10 @@ import {
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from "react-native";
 
+import { HabitPanel } from "@/components/habit-panel";
+import { useHabits } from "@/hooks/use-habits";
 import { TaskPanel } from "@/components/task-panel";
 import { useTasks } from "@/hooks/use-tasks";
 
@@ -22,14 +23,10 @@ export default function HomeScreen() {
   const taskSystem = useTasks();
   const { tasks } = taskSystem;
 
-  const [habits, setHabits] = useState([
-    { id: 1, title: "Drink enough water", icon: "💧", done: true },
-    { id: 2, title: "Read 20 minutes", icon: "📚", done: false },
-    { id: 3, title: "Morning routine", icon: "☀️", done: false },
-  ]);
+  const habitSystem = useHabits();
+  const habitProgress = habitSystem.progress;
 
   const tasksDone = tasks.filter((t) => t.done).length;
-  const habitsDone = habits.filter((h) => h.done).length;
   const progress = tasks.length
     ? (tasksDone / tasks.length) * 100
     : 0;
@@ -78,9 +75,10 @@ export default function HomeScreen() {
           </View>
           <View style={[styles.card, styles.stat]}>
             <Text style={styles.statNumber}>
-              {habitsDone}/{habits.length}
+              {habitSystem.ready ? `${habitProgress.done}/${habitProgress.total}` : "—"}
             </Text>
-            <Text style={styles.muted}>Habits completed</Text>
+            <Text style={styles.muted}>Today’s scheduled habits</Text>
+            <Text style={styles.muted}>{habitSystem.ready ? `${habitProgress.percentage}% complete` : "Loading…"}</Text>
           </View>
         </View>
 
@@ -88,27 +86,7 @@ export default function HomeScreen() {
         <View style={styles.card}><TaskPanel system={taskSystem} /></View>
 
         <Text style={styles.section}>Daily habits</Text>
-        <View style={styles.card}>
-          {habits.map((habit) => (
-            <Pressable
-              key={habit.id}
-              style={styles.item}
-              onPress={() =>
-                setHabits((old) =>
-                  old.map((h) =>
-                    h.id === habit.id ? { ...h, done: !h.done } : h
-                  )
-                )
-              }
-            >
-              <Text style={styles.habitIcon}>{habit.icon}</Text>
-              <Text style={styles.itemText}>{habit.title}</Text>
-              <Text style={{ color: habit.done ? GREEN : MUTED }}>
-                {habit.done ? "✓ Done" : "Check in"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <View style={styles.card}><HabitPanel system={habitSystem} /></View>
 
         <Text style={styles.section}>Your AI coach</Text>
         <View style={[styles.card, styles.aiCard]}>
@@ -232,43 +210,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 15,
     marginBottom: 14,
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    minHeight: 55,
-    borderBottomWidth: 1,
-    borderBottomColor: "#28323D",
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: "#647180",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checked: {
-    backgroundColor: GREEN,
-    borderColor: GREEN,
-  },
-  check: {
-    color: BG,
-    fontWeight: "bold",
-  },
-  itemText: {
-    flex: 1,
-    color: "#F4F7FA",
-    fontSize: 13,
-  },
-  strikethrough: {
-    color: MUTED,
-    textDecorationLine: "line-through",
-  },
-  habitIcon: {
-    fontSize: 20,
   },
   aiCard: {
     backgroundColor: "#191D2C",
