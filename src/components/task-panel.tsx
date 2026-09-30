@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { useTasks } from '@/hooks/use-tasks';
+import type { useCloudTasks } from '@/hooks/use-cloud-tasks';
 import { localDate, selectTasks, validFields, type Priority, type Task, type TaskFields, type TaskFilter, type TaskSort } from '@/utils/tasks';
 
 const GREEN = '#8BE9C0';
@@ -17,27 +17,27 @@ function Action({ label, onPress, disabled = false, selected = false, danger = f
 }
 
 function TaskForm({ task, disabled = false, onSave, onCancel }: {
-  task?: Task; disabled?: boolean; onSave: (fields: TaskFields) => void; onCancel?: () => void;
+  task?: Task; disabled?: boolean; onSave: (fields: TaskFields) => Promise<boolean>; onCancel?: () => void;
 }) {
   const [title, setTitle] = useState(task?.title ?? '');
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium');
   const fields: TaskFields = { title, dueDate: dueDate.trim() || null, priority };
   const valid = validFields(fields);
-  function submit() {
+  async function submit() {
     if (disabled || !valid) return;
-    onSave(fields);
-    if (!task) { setTitle(''); setDueDate(''); setPriority('medium'); }
+    const saved = await onSave(fields);
+    if (saved && !task) { setTitle(''); setDueDate(''); setPriority('medium'); }
   }
   return <View style={styles.form}>
     <Text style={styles.label}>{task ? 'Edit task' : 'New task'}</Text>
     <TextInput accessibilityLabel={task ? 'Edit task title' : 'New task title'} style={styles.input}
       placeholder="What do you need to do?" placeholderTextColor={MUTED} selectionColor={GREEN}
-      value={title} onChangeText={setTitle} maxLength={200} editable={!disabled} returnKeyType="done" onSubmitEditing={submit} />
+      value={title} onChangeText={setTitle} maxLength={200} editable={!disabled} returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <Text style={styles.muted}>Due date (optional, YYYY-MM-DD)</Text>
     <TextInput accessibilityLabel="Due date, YYYY-MM-DD" style={styles.input} value={dueDate} onChangeText={setDueDate}
       placeholder="YYYY-MM-DD" placeholderTextColor={MUTED} selectionColor={GREEN} maxLength={10}
-      autoCapitalize="none" editable={!disabled} returnKeyType="done" onSubmitEditing={submit} />
+      autoCapitalize="none" editable={!disabled} returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <View style={styles.controls}>
       <Action label="Due today" disabled={disabled} onPress={() => setDueDate(localDate())} />
       <Action label="Clear date" disabled={disabled || !dueDate} onPress={() => setDueDate('')} />
@@ -50,13 +50,13 @@ function TaskForm({ task, disabled = false, onSave, onCancel }: {
         selected={priority === value} disabled={disabled} onPress={() => setPriority(value)} />)}
     </View>
     <View style={styles.controls}>
-      <Action label={task ? 'Save changes' : '+ Add task'} disabled={disabled || !valid} onPress={submit} />
-      {onCancel && <Action label="Cancel edit" onPress={onCancel} />}
+      <Action label={task ? 'Save changes' : '+ Add task'} disabled={disabled || !valid} onPress={() => { void submit(); }} />
+      {onCancel && <Action label="Cancel edit" disabled={disabled} onPress={onCancel} />}
     </View>
   </View>;
 }
 
-export function TaskPanel({ system }: { system: ReturnType<typeof useTasks> }) {
+export function TaskPanel({ system }: { system: ReturnType<typeof useCloudTasks> }) {
   const { tasks, ready, error, saving, addTask, editTask, deleteTask, toggleTask, retry } = system;
   const [filter, setFilter] = useState<TaskFilter>('Today');
   const [sort, setSort] = useState<TaskSort>('dueDate');
@@ -71,11 +71,11 @@ export function TaskPanel({ system }: { system: ReturnType<typeof useTasks> }) {
   const editing = tasks.find(task => task.id === editingId);
   function changeFilter(value: TaskFilter) { setFilter(value); setEditingId(null); setDeletingId(null); }
   return <View>
-    <TaskForm disabled={!ready} onSave={addTask} />
+    <TaskForm disabled={!ready || saving} onSave={addTask} />
     <Text style={styles.muted} accessibilityLiveRegion="polite">
-      {!ready ? (error ? 'Tasks unavailable' : 'Loading tasks…') : saving ? 'Saving…' : error ? 'Changes not saved' : 'All tasks saved'}
+      {!ready ? (error ? 'Tasks unavailable' : 'Loading tasks…') : saving ? 'Saving…' : error ? 'Cloud sync needs attention' : 'Tasks synced to your account'}
     </Text>
-    {error && <View><Text style={styles.error} accessibilityRole="alert">{error}</Text><Action label="Retry" onPress={retry} /></View>}
+    {error && <View><Text style={styles.error} accessibilityRole="alert">{error}</Text><Action label="Retry / Sync now" disabled={saving} onPress={retry} /></View>}
     <View style={styles.controls}>
       {(['Today', 'Upcoming', 'Completed', 'All'] as const).map(value =>
         <Action key={value} label={value} selected={filter === value} onPress={() => changeFilter(value)} />)}
@@ -86,14 +86,14 @@ export function TaskPanel({ system }: { system: ReturnType<typeof useTasks> }) {
       <Action label="Due date" selected={sort === 'dueDate'} onPress={() => setSort('dueDate')} />
       <Action label="Priority" selected={sort === 'priority'} onPress={() => setSort('priority')} />
     </View>
-    {editing && <TaskForm key={editing.id} task={editing} onSave={fields => { editTask(editing.id, fields); setEditingId(null); }} onCancel={() => setEditingId(null)} />}
+    {editing && <TaskForm key={editing.id} task={editing} disabled={saving} onSave={async fields => { const saved = await editTask(editing.id, fields); if (saved) setEditingId(null); return saved; }} onCancel={() => setEditingId(null)} />}
     {ready && visible.length === 0 && <View style={styles.empty}>
       <Text style={styles.label}>{tasks.length === 0 ? 'A fresh start' : filter === 'Completed' ? 'Your next win is ahead' : 'You’re all clear here'}</Text>
       <Text style={styles.muted}>{tasks.length === 0 ? 'Add your first task above. Small steps count.' : `No ${filter.toLowerCase()} tasks. Try another filter or add a task.`}</Text>
     </View>}
     {visible.map(task => <View key={task.id} style={styles.row}>
-      <Pressable accessibilityRole="checkbox" accessibilityLabel={task.title} accessibilityState={{ checked: task.done }}
-        style={styles.toggle} onPress={() => toggleTask(task.id)}>
+      <Pressable accessibilityRole="checkbox" accessibilityLabel={task.title} accessibilityState={{ checked: task.done, disabled: saving || !ready }}
+        disabled={saving || !ready} style={[styles.toggle, saving && styles.disabled]} onPress={() => { void toggleTask(task.id); }}>
         <View style={[styles.checkbox, task.done && styles.checked]}>{task.done && <Text style={{ color: '#0C1015' }}>✓</Text>}</View>
         <Text style={[styles.title, task.done && styles.done]}>{task.title}</Text>
       </Pressable>
@@ -106,11 +106,11 @@ export function TaskPanel({ system }: { system: ReturnType<typeof useTasks> }) {
       <View style={styles.controls}>
         {deletingId === task.id ? <>
           <Text style={styles.muted}>Delete this task?</Text>
-          <Action label="Confirm delete" danger onPress={() => { deleteTask(task.id); setDeletingId(null); if (editingId === task.id) setEditingId(null); }} />
-          <Action label="Cancel delete" onPress={() => setDeletingId(null)} />
+          <Action label="Confirm delete" danger disabled={saving} onPress={() => { void deleteTask(task.id).then(saved => { if (saved) { setDeletingId(null); if (editingId === task.id) setEditingId(null); } }); }} />
+          <Action label="Cancel delete" disabled={saving} onPress={() => setDeletingId(null)} />
         </> : <>
-          <Action label="Edit" onPress={() => { setEditingId(task.id); setDeletingId(null); }} />
-          <Action label="Delete" danger onPress={() => { setDeletingId(task.id); setEditingId(null); }} />
+          <Action label="Edit" disabled={saving} onPress={() => { setEditingId(task.id); setDeletingId(null); }} />
+          <Action label="Delete" disabled={saving} danger onPress={() => { setDeletingId(task.id); setEditingId(null); }} />
         </>}
       </View>
     </View>)}

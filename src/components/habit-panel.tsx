@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { useHabits } from '@/hooks/use-habits';
+import type { useCloudHabits } from '@/hooks/use-cloud-habits';
 import { WEEKDAYS, consistency, dateObject, dayStatus, scheduledOn, validHabitFields, weekdaysOn, weekDates, type HabitFields, type Weekday } from '@/utils/habits';
 
 const GREEN = '#8BE9C0';
@@ -16,22 +16,22 @@ function Action({ label, onPress, disabled = false, selected = false, danger = f
   </Pressable>;
 }
 function HabitForm({ initial, disabled = false, onSave, onCancel }: {
-  initial?: HabitFields; disabled?: boolean; onSave: (fields: HabitFields) => void; onCancel?: () => void;
+  initial?: HabitFields; disabled?: boolean; onSave: (fields: HabitFields) => Promise<boolean>; onCancel?: () => void;
 }) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [weekdays, setWeekdays] = useState<Weekday[]>(initial?.weekdays ?? [1, 2, 3, 4, 5, 6, 0]);
   const fields = { title, weekdays };
-  function submit() {
+  async function submit() {
     if (disabled || !validHabitFields(fields)) return;
-    onSave(fields);
-    if (!initial) { setTitle(''); setWeekdays([1, 2, 3, 4, 5, 6, 0]); }
+    const saved = await onSave(fields);
+    if (saved && !initial) { setTitle(''); setWeekdays([1, 2, 3, 4, 5, 6, 0]); }
   }
   return <View style={styles.form}>
     <Text style={styles.label}>{initial ? 'Edit habit' : 'New habit'}</Text>
     <TextInput accessibilityLabel={initial ? 'Edit habit name' : 'New habit name'} style={styles.input}
       placeholder="Name your habit" placeholderTextColor={MUTED} selectionColor={GREEN}
       value={title} onChangeText={setTitle} maxLength={200} editable={!disabled}
-      returnKeyType="done" onSubmitEditing={submit} />
+      returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <Text style={styles.muted}>Repeat on · choose at least one weekday</Text>
     <View style={styles.controls}>
       {DAY_ORDER.map(day => <Pressable key={day} accessibilityRole="checkbox" accessibilityLabel={WEEKDAYS[day]}
@@ -44,15 +44,15 @@ function HabitForm({ initial, disabled = false, onSave, onCancel }: {
     {weekdays.length === 0 && <Text style={styles.error} accessibilityRole="alert">Choose at least one weekday.</Text>}
     {initial && <Text style={styles.muted}>Schedule changes apply from today. Earlier history stays unchanged.</Text>}
     <View style={styles.controls}>
-      <Action label={initial ? 'Save habit' : '+ Add habit'} disabled={disabled || !validHabitFields(fields)} onPress={submit} />
-      {onCancel && <Action label="Cancel edit" onPress={onCancel} />}
+      <Action label={initial ? 'Save habit' : '+ Add habit'} disabled={disabled || !validHabitFields(fields)} onPress={() => { void submit(); }} />
+      {onCancel && <Action label="Cancel edit" disabled={disabled} onPress={onCancel} />}
     </View>
   </View>;
 }
 const symbols = { complete: '✓', missed: '×', pending: '○', future: '·', off: '—' };
 const colors = { complete: GREEN, missed: '#FF9C9C', pending: '#F3CE83', future: MUTED, off: '#65717F' };
 
-export function HabitPanel({ system }: { system: ReturnType<typeof useHabits> }) {
+export function HabitPanel({ system }: { system: ReturnType<typeof useCloudHabits> }) {
   const { habits, today, ready, error, saving, addHabit, editHabit, deleteHabit, toggleToday, retry } = system;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -60,13 +60,13 @@ export function HabitPanel({ system }: { system: ReturnType<typeof useHabits> })
   const editing = habits.find(habit => habit.id === editingId);
   const dates = weekDates(today, weekOffset);
   return <View>
-    <HabitForm disabled={!ready} onSave={addHabit} />
+    <HabitForm disabled={!ready || saving} onSave={addHabit} />
     <Text style={styles.muted} accessibilityLiveRegion="polite">
-      {!ready ? (error ? 'Habits unavailable' : 'Loading habits and history…') : saving ? 'Saving…' : error ? 'Changes not saved' : 'All habits and history saved'}
+      {!ready ? (error ? 'Habits unavailable' : 'Loading habits and history…') : saving ? 'Saving…' : error ? 'Cloud sync needs attention' : 'Habits and history synced to your account'}
     </Text>
-    {error && <View><Text style={styles.error} accessibilityRole="alert">{error}</Text><Action label="Retry" onPress={retry} /></View>}
-    {editing && <HabitForm key={editing.id} initial={{ title: editing.title, weekdays: weekdaysOn(editing, today) }}
-      onSave={fields => { editHabit(editing.id, fields); setEditingId(null); }} onCancel={() => setEditingId(null)} />}
+    {error && <View><Text style={styles.error} accessibilityRole="alert">{error}</Text><Action label="Retry / Sync now" disabled={saving} onPress={retry} /></View>}
+    {editing && <HabitForm key={editing.id} disabled={saving} initial={{ title: editing.title, weekdays: weekdaysOn(editing, today) }}
+      onSave={async fields => { const saved = await editHabit(editing.id, fields); if (saved) setEditingId(null); return saved; }} onCancel={() => setEditingId(null)} />}
     {ready && habits.length === 0 && <View style={styles.empty}>
       <Text style={styles.label}>Build your first habit</Text>
       <Text style={styles.muted}>Pick a small action and the days you want to repeat it. Check in when you have done it.</Text>
@@ -82,19 +82,19 @@ export function HabitPanel({ system }: { system: ReturnType<typeof useHabits> })
         <Text style={styles.muted}>{DAY_ORDER.filter(day => weekdays.includes(day)).map(day => WEEKDAYS[day]).join(' · ')}</Text>
         <Text style={[styles.muted, scheduled && styles.green]}>{scheduled ? 'Scheduled today' : 'Not scheduled today'}</Text>
         <Pressable accessibilityRole="checkbox" accessibilityLabel={`Complete ${habit.title} for today`}
-          accessibilityState={{ checked: scheduled && done, disabled: !scheduled || !ready }} disabled={!scheduled || !ready}
-          onPress={() => toggleToday(habit.id)} style={[styles.checkIn, (!scheduled || !ready) && styles.disabled]}>
+          accessibilityState={{ checked: scheduled && done, disabled: !scheduled || !ready || saving }} disabled={!scheduled || !ready || saving}
+          onPress={() => { void toggleToday(habit.id); }} style={[styles.checkIn, (!scheduled || !ready || saving) && styles.disabled]}>
           <Text style={styles.green}>{scheduled && done ? '✓ Complete today · tap to undo' : scheduled ? '○ Mark complete for today' : 'Rest day'}</Text>
         </Pressable>
         <Text style={styles.muted}>{stats.percentage === null ? 'No scheduled days in the last 7 days.' : `${stats.percentage}% consistency · ${stats.done}/${stats.total} scheduled days completed`}</Text>
         <View style={styles.controls}>
           {deletingId === habit.id ? <>
             <Text style={styles.error}>Delete this habit and all its history?</Text>
-            <Action label="Confirm delete" danger onPress={() => { deleteHabit(habit.id); setDeletingId(null); if (editingId === habit.id) setEditingId(null); }} />
-            <Action label="Cancel delete" onPress={() => setDeletingId(null)} />
+            <Action label="Confirm delete" danger disabled={saving} onPress={() => { void deleteHabit(habit.id).then(saved => { if (saved) { setDeletingId(null); if (editingId === habit.id) setEditingId(null); } }); }} />
+            <Action label="Cancel delete" disabled={saving} onPress={() => setDeletingId(null)} />
           </> : <>
-            <Action label="Edit habit" onPress={() => { setEditingId(habit.id); setDeletingId(null); }} />
-            <Action label="Delete habit" danger onPress={() => { setDeletingId(habit.id); setEditingId(null); }} />
+            <Action label="Edit habit" disabled={saving} onPress={() => { setEditingId(habit.id); setDeletingId(null); }} />
+            <Action label="Delete habit" disabled={saving} danger onPress={() => { setDeletingId(habit.id); setEditingId(null); }} />
           </>}
         </View>
       </View>;
