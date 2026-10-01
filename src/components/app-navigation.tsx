@@ -10,6 +10,7 @@ const ROUTES = [
   { href: '/' as const, label: 'Dashboard', icon: '▦' },
   { href: '/tasks' as const, label: 'Tasks', icon: '✓' },
   { href: '/habits' as const, label: 'Habits', icon: '↻' },
+  { href: '/coach' as const, label: 'AI Coach', icon: '✦' },
   { href: '/settings' as const, label: 'Settings', icon: '⚙' },
 ];
 

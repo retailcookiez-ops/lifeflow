@@ -23,7 +23,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Check Edge Function types
-        run: npx --yes deno check supabase/functions/delete-account/index.ts
+        run: npx --yes deno check supabase/functions/delete-account/index.ts supabase/functions/ai-coach/index.ts
       - run: npx expo lint
       - name: Generate route types
         run: |
@@ -34,7 +34,7 @@ jobs:
       - name: Install temporary browser test tools
         run: npx expo install playwright -- --no-save --package-lock=false
       - run: npx playwright install --with-deps chromium
-      - name: Check onboarding, profiles, login and responsive navigation
+      - name: Check onboarding, profiles, AI Coach, login and responsive navigation
         run: node scripts/check-web.cjs
       - uses: actions/upload-artifact@v4
         if: always()

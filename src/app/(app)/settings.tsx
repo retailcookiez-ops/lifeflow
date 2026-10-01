@@ -57,7 +57,7 @@ export default function SettingsScreen() {
     </View>
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Privacy and your data</Text>
-      <Text style={screenStyles.muted}>Your profile, tasks, habits and check-ins are stored in your Supabase account. Owner-only database policies protect access. No AI processing or social sharing is used.</Text>
+      <Text style={screenStyles.muted}>Your profile, tasks, habits and check-ins are stored in your Supabase account. Owner-only database policies protect access. AI Coach sends your message to OpenAI only when you request suggestions; sharing today’s limited context is optional and off by default. Coach history stays in memory for the current login session. Only usage counters are stored in Supabase. OpenAI retention rules apply.</Text>
       <Text style={[screenStyles.muted, { marginTop: 10 }]}>Logging out keeps your cloud data. Older local data stays on this device until you choose to import it; deleting your account does not erase those local backups.</Text>
     </View>
     <DeleteAccountPanel disabled={saving || busy} />

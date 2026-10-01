@@ -58,6 +58,7 @@ async function visible(locator) {
       let failSave = false;
       let failRead = false;
       let deletes = 0;
+      let coachCalls = []; let failCoach = false; let taskWrites = 0;
       await context.route(cloudOrigin + '/**', async route => {
         const request = route.request();
         const url = new URL(request.url());
@@ -75,7 +76,18 @@ async function visible(locator) {
           data = profile;
         }
         else if (url.pathname === '/functions/v1/delete-account') { deletes++; data = {deleted:true}; }
-        else if (url.pathname.startsWith('/rest/v1/')) data = [];
+        else if (url.pathname === '/functions/v1/ai-coach') {
+          const input = request.postDataJSON(); coachCalls.push(input);
+          assert.ok(request.headers().authorization?.startsWith('Bearer '));
+          if (failCoach) return route.fulfill({status:502,headers,contentType:'application/json',body:JSON.stringify({code:'provider_unavailable'})});
+          data = {answer:{summary:'Consider one focused block.',suggestions:[{title:'Start small',reason:'Make the first step manageable.',steps:['You could choose one task.']}]},
+            usage:{allowed:true,remaining:19,limit:20,resetAt:new Date(Date.now()+86400000).toISOString(),retryAfterSeconds:10},
+            contextIncluded:input.includeContext,contextSummary:{tasks:0,habits:0,truncated:false},generatedAt:new Date().toISOString()};
+        }
+        else if (url.pathname.startsWith('/rest/v1/')) {
+          if (request.method() !== 'GET') taskWrites++;
+          data = [];
+        }
         else throw new Error('Unexpected mock request: ' + url.pathname);
         return route.fulfill({ status:200, headers, contentType:'application/json', body:JSON.stringify(data) });
       });
@@ -129,6 +141,32 @@ async function visible(locator) {
         await visible(page.getByRole('heading', { name:'Tasks', exact:true }));
         await page.getByRole('link', { name:'Habits', exact:true }).click();
         await visible(page.getByRole('heading', { name:'Habits', exact:true }));
+        await page.getByRole('link', { name:'AI Coach', exact:true }).click();
+        await visible(page.getByRole('heading', {name:'AI Coach',exact:true}));
+        assert.equal(await page.getByRole('switch',{name:'Share today’s context'}).isChecked(),false);
+        await page.getByRole('button',{name:'Plan my day',exact:true}).click();
+        assert.equal(coachCalls.length,0, 'Quick prompts must not send automatically');
+        await page.getByRole('button',{name:'Get suggestions',exact:true}).click();
+        await visible(page.getByText('AI-generated suggestions · Nothing has been changed',{exact:true}));
+        assert.equal(coachCalls[0].includeContext,false);
+        await page.getByRole('link',{name:'Tasks',exact:true}).click();
+        await page.getByRole('link',{name:'AI Coach',exact:true}).click();
+        await visible(page.getByText('Consider one focused block.',{exact:true}));
+        await page.screenshot({path:'browser-checks/coach-'+scenario+'-'+viewport.width+'.png',fullPage:true});
+        await page.getByRole('button',{name:'Clear history',exact:true}).click();
+        await visible(page.getByText('What would make today easier?',{exact:true}));
+        await page.getByRole('switch',{name:'Share today’s context'}).click();
+        await page.getByRole('textbox',{name:'Ask AI Coach',exact:true}).fill('Suggest a routine');
+        failCoach=true;
+        await page.getByRole('button',{name:'Get suggestions',exact:true}).click();
+        await visible(page.getByText('AI Coach is temporarily unavailable. Please try again later.',{exact:true}));
+        assert.equal(await page.getByRole('textbox',{name:'Ask AI Coach',exact:true}).inputValue(),'Suggest a routine');
+        failCoach=false; await page.getByRole('button',{name:'Retry request',exact:true}).click();
+        await visible(page.getByText('Consider one focused block.',{exact:true}));
+        assert.equal(coachCalls.at(-1).includeContext,true); assert.equal(taskWrites,0,'Coach must never mutate tasks or habits');
+        await page.goto(origin+'/coach');
+        await visible(page.getByText('What would make today easier?',{exact:true}));
+        assert.equal(await page.getByRole('switch',{name:'Share today’s context'}).isChecked(),false);
         await page.getByRole('link', { name:'Settings', exact:true }).click();
         await visible(page.getByRole('heading', { name:'Settings', exact:true }));
         await page.reload();
@@ -171,7 +209,7 @@ async function visible(locator) {
         await visible(page.getByRole('heading',{name:'Settings',exact:true}));
         await page.getByRole('button', { name:'Log out', exact:true }).click();
         await visible(page.getByRole('heading', { name:'Welcome', exact:true }));
-        await page.goto(origin + '/habits');
+        await page.goto(origin + '/coach');
         await visible(page.getByRole('heading', { name:'Welcome', exact:true }));
         assert.deepEqual(errors, [], 'No uncaught browser runtime errors');
         console.log('PASS: '+scenario+' onboarding/profile, validation, saved preferences, protected routes, navigation, refresh and logout at width ' + viewport.width);

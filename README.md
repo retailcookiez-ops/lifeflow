@@ -24,3 +24,7 @@ Start Expo once to regenerate typed routes before typechecking after route chang
 ## Onboarding and profile settings
 
 See [onboarding setup and testing](docs/ONBOARDING_SETUP.md). Apply migration `202609300002_profiles_onboarding.sql` after the original database migration before running the updated app. Account deletion additionally requires deploying the included server-side Edge Function.
+
+## Suggestion-only AI Coach
+
+AI Coach provides planning suggestions without changing tasks or habits. Follow [AI Coach setup, deployment, privacy and testing](docs/AI_COACH_SETUP.md). Apply the new usage migration, set `OPENAI_API_KEY` as a **Supabase Edge Function secret**, and deploy `ai-coach`. There are no new client environment variables. Context sharing is optional and off by default.
