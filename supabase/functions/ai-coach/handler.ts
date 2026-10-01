@@ -55,7 +55,13 @@ export function coachHandler(deps: Dependencies) {
         contextSummary: { tasks: context?.tasks.length ?? 0, habits: context?.habits.length ?? 0, truncated: context?.truncated ?? false }, generatedAt: new Date().toISOString() });
     } catch (error) {
       const code = error instanceof ModelError ? error.code : 'provider_unavailable';
-      const messages = { timeout: 'AI Coach took too long. Please retry.', invalid_response: 'AI Coach returned an unusable suggestion. Nothing was changed. Please retry.', refused: 'AI Coach could not help with that request. Try a day-planning or habit question.', provider_unavailable: 'AI Coach is temporarily unavailable. Please try again later.' };
+      const messages = {
+  provider_auth: "OpenAI rejected the server API credentials. The project owner should check OPENAI_API_KEY and API access settings in Supabase Secrets.",
+  provider_quota: "OpenAI API credits or usage limits are exhausted. The project owner should check OpenAI API Billing and Limits. ChatGPT Plus does not include API usage.",
+  provider_rate_limit: "OpenAI is receiving requests too quickly. Wait a minute before retrying.",
+  provider_access: "The OpenAI model or endpoint is unavailable to this API project. The project owner should check OPENAI_MODEL and API key permissions.",
+  provider_request: "OpenAI rejected the request configuration. The project owner should check the model supports Responses and structured output, and deploy the latest ai-coach function.",
+ timeout: 'AI Coach took too long. Please retry.', invalid_response: 'AI Coach returned an unusable suggestion. Nothing was changed. Please retry.', refused: 'AI Coach could not help with that request. Try a day-planning or habit question.', provider_unavailable: 'AI Coach is temporarily unavailable. Please try again later.' };
       return reply(code === 'timeout' ? 504 : 502, { code, error: messages[code], usage });
     }
   };

@@ -121,3 +121,23 @@ test('durable quota enforces owner RLS, service-only mutation, cooldown, per-use
     await db.exec(`reset role;delete from auth.users where id='${a}'`);assert.equal((await db.query('select * from ai_coach_usage where user_id=$1',[a])).rows.length,0);
   }finally{await db.close();}
 });
+
+test('provider errors distinguish billing, credentials, access and rate limits without exposing upstream text',async()=>{
+  for (const [status,detail,expected] of [
+    [401,{code:'invalid_api_key'},'provider_auth'],
+    [429,{code:'insufficient_quota'},'provider_quota'],
+    [429,{code:'credit_balance_exhausted'},'provider_quota'],
+    [429,{code:'project_spend_limit_exceeded'},'provider_quota'],
+    [429,{type:'insufficient_quota'},'provider_quota'],
+    [429,{code:'rate_limit_exceeded'},'provider_rate_limit'],
+    [403,{},'provider_access'],[404,{code:'model_not_found'},'provider_access'],
+    [400,{},'provider_request'],[500,{},'provider_unavailable'],
+  ]) {
+    const upstream=async()=>Response.json({error:{...detail,message:'SECRET_KEY_PRIVATE_PROMPT'}},{status});
+    const {handler}=fixtures({generate:()=>model.generateAdvice('test-key','model','Help',null,upstream)});
+    const response=await handler(request());const payload=await response.json();
+    assert.equal(response.status,502);assert.equal(payload.code,expected);assert.equal(payload.usage.remaining,19);
+    assert.ok(!JSON.stringify(payload).includes('SECRET_KEY_PRIVATE_PROMPT'));
+    assert.ok(payload.error.length>0);
+  }
+});

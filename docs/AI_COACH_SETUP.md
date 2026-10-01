@@ -165,3 +165,16 @@ Repeat on a phone and second browser. History should not sync between devices, w
 - `supabase/config.toml`: handler-verified function authentication configuration.
 - `tests/coach.test.cjs`, `scripts/check-web.cjs`, `.github/workflows/checks.yml`: security, quota, provider, UI and build checks.
 - `README.md`, this guide: setup and testing instructions.
+
+## If Coach reports “temporarily unavailable”
+
+Older builds combine all provider errors into one message. Pull the latest branch, redeploy `ai-coach`, and restart Expo to get a specific safe error. No new migration or key in the client is needed.
+
+- **API credits or usage limits:** check the OpenAI API project's Billing and Limits. A ChatGPT subscription does not supply API credits. Repeated retries cannot fix exhausted credits.
+- **API credentials rejected:** check the server-side `OPENAI_API_KEY` and API access settings. Never paste keys into support messages.
+- **Model/endpoint access:** check `OPENAI_MODEL` and key permissions; the default is `gpt-4.1-mini`.
+- **Requests too quickly:** wait before retrying; this is an upstream limit, separate from LifeFlow's own quota.
+- **Request configuration:** check model compatibility with Responses and structured output and deploy the latest function.
+- **Temporarily unavailable:** upstream server/network failures remain a generic safe message.
+
+The endpoint exposes only allowlisted error categories and fixed explanations, never the provider's raw message, request content, or credentials.

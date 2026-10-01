@@ -4,6 +4,11 @@ export class CoachError extends Error {
   constructor(message: string, public usage?: CoachUsage) { super(message); }
 }
 const messages: Record<string, string> = {
+  provider_auth: "OpenAI rejected the server API credentials. The project owner should check OPENAI_API_KEY and API access settings in Supabase Secrets.",
+  provider_quota: "OpenAI API credits or usage limits are exhausted. The project owner should check OpenAI API Billing and Limits. ChatGPT Plus does not include API usage.",
+  provider_rate_limit: "OpenAI is receiving requests too quickly. Wait a minute before retrying.",
+  provider_access: "The OpenAI model or endpoint is unavailable to this API project. The project owner should check OPENAI_MODEL and API key permissions.",
+  provider_request: "OpenAI rejected the request configuration. The project owner should check the model supports Responses and structured output, and deploy the latest ai-coach function.",
   auth: 'Your session has expired. Log in again.', auth_unavailable: 'Could not verify your session. Please retry.',
   input: 'Enter a request of 1–1200 characters.', setup: 'AI Coach needs its server-side API key. See the AI Coach setup guide.',
   usage_setup: 'AI usage limits are unavailable. Check that the AI Coach SQL migration has been run.',

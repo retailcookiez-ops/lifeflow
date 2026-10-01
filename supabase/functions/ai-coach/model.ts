@@ -1,7 +1,7 @@
-import { answerSchema, validAnswer, type CoachAnswer } from '../_shared/coach-contract.ts';
+import { answerSchema, object, validAnswer, type CoachAnswer } from '../_shared/coach-contract.ts';
 import type { CoachContext } from './context.ts';
 export class ModelError extends Error {
-  constructor(public code: 'provider_unavailable' | 'invalid_response' | 'refused' | 'timeout') { super(code); }
+  constructor(public code: 'provider_unavailable' | 'invalid_response' | 'refused' | 'timeout' | 'provider_auth' | 'provider_quota' | 'provider_rate_limit' | 'provider_access' | 'provider_request') { super(code); }
 }
 export const instructions = `You are LifeFlow's suggestion-only planning coach. Help with day planning, task breakdowns, general routines, study blocks, habit improvements, and today's focus.
 You have NO tools, NO database access and NO ability to take any action. Never claim or promise to create, edit, delete, save, complete, schedule or reschedule anything. All steps must be suggestions for the user to decide on and perform manually. Use language such as "Consider" and "You could". Do not include an "apply" or "saved" action.
@@ -22,7 +22,19 @@ export async function generateAdvice(apiKey: string, model: string, message: str
         text: { format: { type: 'json_schema', name: 'lifeflow_suggestions', strict: true, schema: answerSchema } },
       }),
     });
-    if (!response.ok) throw new ModelError('provider_unavailable');
+    if (!response.ok) {
+      // Inspect only machine-readable codes; never forward/log upstream messages or keys.
+      let body: unknown;
+      try { body = await response.json(); } catch { /* Non-JSON upstream error. */ }
+      const detail = object(body) && object(body.error) ? body.error : {};
+      const billingCodes = ['insufficient_quota', 'credit_balance_exhausted', 'organization_spend_limit_exceeded', 'project_spend_limit_exceeded', 'organization_usage_limit_exceeded', 'billing_hard_limit_reached'];
+      if (response.status === 401) throw new ModelError('provider_auth');
+      if (billingCodes.includes(String(detail.code)) || detail.type === 'insufficient_quota') throw new ModelError('provider_quota');
+      if (response.status === 429) throw new ModelError('provider_rate_limit');
+      if (response.status === 403 || response.status === 404) throw new ModelError('provider_access');
+      if (response.status === 400 || response.status === 422) throw new ModelError('provider_request');
+      throw new ModelError('provider_unavailable');
+    }
     const payload = await response.json();
     if (payload.status !== 'completed' || !Array.isArray(payload.output)) throw new ModelError('invalid_response');
     const content = payload.output.filter((item: { type?: string }) => item.type === 'message').flatMap((item: { content?: unknown[] }) => item.content ?? []);
