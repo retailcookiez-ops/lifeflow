@@ -1,0 +1,44 @@
+name: LifeFlow checks
+on:
+  push:
+    branches: [feat/persistent-tasks]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "1"
+      EXPO_PUBLIC_SUPABASE_URL: https://lifeflow-ci.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_mock_only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Check Edge Function types
+        run: npx --yes deno check supabase/functions/delete-account/index.ts supabase/functions/ai-coach/index.ts
+      - run: npx expo lint
+      - name: Generate route types
+        run: |
+          node -e "const p=require('node:path');const fs=require('node:fs');fs.mkdirSync('.expo/types',{recursive:true});process.env.EXPO_ROUTER_APP_ROOT=p.resolve('src/app');const cli=require.resolve('@expo/cli',{paths:[require.resolve('expo/package.json')]});require(require.resolve('@expo/router-server/build/typed-routes',{paths:[cli]})).regenerateDeclarations('.expo/types',{});"
+      - run: npx tsc --noEmit
+      - name: Export web and mobile bundles
+        run: npx expo export --platform all
+      - name: Install temporary browser test tools
+        run: npx expo install playwright -- --no-save --package-lock=false
+      - run: npx playwright install --with-deps chromium
+      - name: Check onboarding, profiles, AI Coach, login and responsive navigation
+        run: node scripts/check-web.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lifeflow-browser-checks
+          path: browser-checks/
+          if-no-files-found: ignore

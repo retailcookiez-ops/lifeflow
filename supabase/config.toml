@@ -1,0 +1,8 @@
+# The handler verifies the bearer token with Supabase Auth and rechecks the password.
+# Explicit verification supports projects with both asymmetric and legacy signing keys.
+[functions.delete-account]
+verify_jwt = false
+
+# The handler validates every user's JWT via Auth.getUser before any AI work.
+[functions.ai-coach]
+verify_jwt = false
