@@ -139,18 +139,19 @@ async function visible(locator) {
         await page.screenshot({ path:'browser-checks/dashboard-' + scenario + '-' + viewport.width + '.png', fullPage:true });
         // Both palettes must apply immediately and persist across refresh/direct routes.
         for (const theme of ['Light','Dark']) {
-          await page.getByRole('button',{name:theme+' theme',exact:true}).first().click();
+          await page.getByRole('radio',{name:theme+' theme',exact:true}).first().click();
           await page.waitForFunction(expected=>localStorage.getItem('lifeflow:theme')===expected,theme.toLowerCase());
           const background=await page.getByRole('heading',{name:'Let’s make progress today.',exact:true}).evaluate(el=>getComputedStyle(el).color);
           assert.equal(background,theme==='Light'?'rgb(18, 33, 62)':'rgb(244, 247, 255)');
           await page.screenshot({path:'browser-checks/design-'+theme.toLowerCase()+'-'+scenario+'-'+viewport.width+'.png',fullPage:true});
+          if (viewport.width < 700) { await page.getByText('Today’s habits',{exact:true}).scrollIntoViewIfNeeded(); await page.screenshot({path:'browser-checks/design-bottom-'+theme.toLowerCase()+'-'+scenario+'-'+viewport.width+'.png',fullPage:true}); await page.getByRole('heading',{name:'Let’s make progress today.',exact:true}).scrollIntoViewIfNeeded(); }
           assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow');
         }
-        await page.getByRole('button',{name:'Light theme',exact:true}).first().click();
+        await page.getByRole('radio',{name:'Light theme',exact:true}).first().click();
         await page.waitForFunction(()=>localStorage.getItem('lifeflow:theme')==='light');
         await page.reload();
         await visible(page.getByText('Today’s task progress',{exact:true}));
-        assert.equal(await page.getByRole('button',{name:'Light theme',exact:true}).first().getAttribute('aria-selected'),'true');
+        assert.equal(await page.getByRole('radio',{name:'Light theme',exact:true}).first().isChecked(),true);
         await page.getByRole('textbox',{name:'Search tasks and habits',exact:true}).fill('nonexistent');
         await visible(page.getByText('No matching tasks or habits.',{exact:true}));
         await page.getByRole('textbox',{name:'Search tasks and habits',exact:true}).fill('');
