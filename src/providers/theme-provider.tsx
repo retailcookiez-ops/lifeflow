@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export type Mode = 'dark' | 'light';
 const palettes = {
   dark: { bg: '#080F19', surface: '#111D2B', inset: '#0C1724', border: '#26374B', text: '#F4F7FF', muted: '#ADBDD2', faint: '#8295AD', teal: '#62E4D1', purple: '#BB88FA', blue: '#5BCBF4', amber: '#F8C475', active: '#173B3C', error: '#FF9C9C', buttonText: '#062A2B' },
-  light: { bg: '#F4F8FD', surface: '#FFFFFF', inset: '#EDF3FA', border: '#DCE5F0', text: '#12213E', muted: '#536985', faint: '#627995', teal: '#00877F', purple: '#7B3FCC', blue: '#087EAC', amber: '#A7600C', active: '#DCFAF4', error: '#B52E45', buttonText: '#FFFFFF' },
+  light: { bg: '#F4F8FD', surface: '#FFFFFF', inset: '#EDF3FA', border: '#DCE5F0', text: '#12213E', muted: '#536985', faint: '#586F8B', teal: '#007B73', purple: '#7B3FCC', blue: '#087EAC', amber: '#A7600C', active: '#DCFAF4', error: '#B52E45', buttonText: '#FFFFFF' },
 };
 export type Palette = typeof palettes.dark;
 const ThemeContext = createContext<ReturnType<typeof useThemeState> | null>(null);
