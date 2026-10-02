@@ -1,32 +1,42 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { screenStyles } from '@/components/lifeflow-screen';
+import { screenStyles as basescreenStyles } from '@/components/lifeflow-screen';
 import { GOALS, MODULES, type ProfileFields as Fields } from '@/utils/profile';
 export function ProfileAction({ label, onPress, disabled = false, primary = false, danger = false }: {
   label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean;
 }) {
+  const { color } = useAppTheme();
+  const profileStyles = useThemedStyles(baseprofileStyles);
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={[profileStyles.button, primary && profileStyles.primary, disabled && { opacity: 0.45 }]}>
-    <Text style={{ color: danger ? '#FF9C9C' : primary ? '#0C1015' : '#8BE9C0', fontWeight: '700' }}>{label}</Text>
+    <Text style={{ color: danger ? color('#FF9C9C') : primary ? color('#062A2B') : color('#8BE9C0'), fontWeight: '700' }}>{label}</Text>
   </Pressable>;
 }
 export function ProfileInput({ label, value, onChangeText, placeholder, disabled = false, secure = false, maxLength = 100 }: {
   label: string; value: string; onChangeText: (value: string) => void; placeholder?: string; disabled?: boolean; secure?: boolean; maxLength?: number;
 }) {
+  const { color } = useAppTheme();
+  const screenStyles = useThemedStyles(basescreenStyles);
+  const profileStyles = useThemedStyles(baseprofileStyles);
   return <View style={{ gap: 6 }}><Text style={screenStyles.label}>{label}</Text>
     <TextInput accessibilityLabel={label} style={profileStyles.input} value={value} onChangeText={onChangeText}
-      placeholder={placeholder} placeholderTextColor="#9CA8B5" selectionColor="#8BE9C0" editable={!disabled}
+      placeholder={placeholder} placeholderTextColor={color("#9CA8B5")} selectionColor={color("#8BE9C0")} editable={!disabled}
       autoCapitalize="none" autoCorrect={false} secureTextEntry={secure} maxLength={maxLength} />
   </View>;
 }
 function Choice({ label, selected, onPress, disabled }: { label: string; selected: boolean; onPress: () => void; disabled: boolean }) {
+  const { color } = useAppTheme();
+  const profileStyles = useThemedStyles(baseprofileStyles);
   return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{ checked: selected, disabled }}
     disabled={disabled} onPress={onPress} style={[profileStyles.button, selected && profileStyles.selected, disabled && { opacity: 0.45 }]}>
-    <Text style={{ color: selected ? '#8BE9C0' : '#C2CAD4' }}>{selected ? '✓ ' : '+ '}{label}</Text>
+    <Text style={{ color: selected ? color('#8BE9C0') : color('#C2CAD4') }}>{selected ? '✓ ' : '+ '}{label}</Text>
   </Pressable>;
 }
 export function ProfileFields({ value, onChange, section, disabled = false }: {
   value: Fields; onChange: (fields: Fields) => void; section: 'identity' | 'routine' | 'modules'; disabled?: boolean;
 }) {
+  const screenStyles = useThemedStyles(basescreenStyles);
+  const profileStyles = useThemedStyles(baseprofileStyles);
   function update<K extends keyof Fields>(key: K, next: Fields[K]) { onChange({ ...value, [key]: next }); }
   return <View style={profileStyles.fields}>
     {section === 'identity' && <>
@@ -55,10 +65,12 @@ export function ProfileFields({ value, onChange, section, disabled = false }: {
     </>}
   </View>;
 }
-export const profileStyles = StyleSheet.create({
+export const baseprofileStyles = StyleSheet.create({
   fields: { gap: 14 }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   input: { color: '#F4F7FA', backgroundColor: '#0C1015', borderWidth: 1, borderColor: '#344150', borderRadius: 12, padding: 14, minHeight: 48, fontSize: 15 },
   button: { minHeight: 46, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: '#344150', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   primary: { backgroundColor: '#8BE9C0', borderColor: '#8BE9C0' }, selected: { borderColor: '#8BE9C0', backgroundColor: '#20382F' },
   error: { color: '#FF9C9C', lineHeight: 21 },
 });
+
+export { baseprofileStyles as profileStyles };

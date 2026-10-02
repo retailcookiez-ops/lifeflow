@@ -128,15 +128,33 @@ async function visible(locator) {
             await page.getByRole('button', {name:'Finish setup',exact:true}).click();
           }
         }
-        for (const title of ['TODAY’S TASK PROGRESS','TODAY’S HABIT PROGRESS','Upcoming tasks','Today’s habits']) {
+        for (const title of ['Today’s task progress','Today’s habit progress','Upcoming tasks','Today’s habits']) {
           await visible(page.getByText(title, { exact:true }));
         }
         assert.ok(profile.onboarding_completed_at);
-        if (scenario === 'new') await visible(page.getByText('Hello, Alex. Small steps. Consistent progress.',{exact:true}));
+        if (scenario === 'new') await visible(page.getByText(/Good (morning|afternoon|evening), Alex/));
         const dashboard = await visible(page.getByRole('link', { name:'Dashboard', exact:true }));
         if (viewport.width >= 900) assert.ok(dashboard.x < 232, 'Desktop sidebar must be on the left');
         else assert.ok(dashboard.y >= viewport.height - 150, 'Mobile navigation must stay near the viewport bottom');
         await page.screenshot({ path:'browser-checks/dashboard-' + scenario + '-' + viewport.width + '.png', fullPage:true });
+        // Both palettes must apply immediately and persist across refresh/direct routes.
+        for (const theme of ['Light','Dark']) {
+          await page.getByRole('button',{name:theme+' theme',exact:true}).first().click();
+          await page.waitForFunction(expected=>localStorage.getItem('lifeflow:theme')===expected,theme.toLowerCase());
+          const background=await page.getByRole('heading',{name:'Let’s make progress today.',exact:true}).evaluate(el=>getComputedStyle(el).color);
+          assert.equal(background,theme==='Light'?'rgb(18, 33, 62)':'rgb(244, 247, 255)');
+          await page.screenshot({path:'browser-checks/design-'+theme.toLowerCase()+'-'+scenario+'-'+viewport.width+'.png',fullPage:true});
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow');
+        }
+        await page.getByRole('button',{name:'Light theme',exact:true}).first().click();
+        await page.waitForFunction(()=>localStorage.getItem('lifeflow:theme')==='light');
+        await page.reload();
+        await visible(page.getByText('Today’s task progress',{exact:true}));
+        assert.equal(await page.getByRole('button',{name:'Light theme',exact:true}).first().getAttribute('aria-selected'),'true');
+        await page.getByRole('textbox',{name:'Search tasks and habits',exact:true}).fill('nonexistent');
+        await visible(page.getByText('No matching tasks or habits.',{exact:true}));
+        await page.getByRole('textbox',{name:'Search tasks and habits',exact:true}).fill('');
+
         await page.getByRole('link', { name:'Tasks', exact:true }).click();
         await visible(page.getByRole('heading', { name:'Tasks', exact:true }));
         await page.getByRole('link', { name:'Habits', exact:true }).click();
@@ -174,7 +192,7 @@ async function visible(locator) {
         await page.getByRole('link', { name:'Open Welcome →', exact:true }).click();
         await visible(page.getByRole('heading', { name:'Welcome', exact:true }));
         await page.getByRole('link', { name:'Continue to Dashboard →', exact:true }).click();
-        await visible(page.getByText('TODAY’S TASK PROGRESS', { exact:true }));
+        await visible(page.getByText('Today’s task progress', { exact:true }));
         await page.getByRole('link', { name:'Settings', exact:true }).click();
         await page.getByRole('textbox',{name:'Display name',exact:true}).fill('Taylor');
         await page.getByRole('checkbox',{name:'Tasks summary',exact:true}).click();
@@ -183,9 +201,9 @@ async function visible(locator) {
         await visible(page.getByText('Profile saved. Your dashboard is up to date.',{exact:true}));
         assert.equal(profile.display_name,'Taylor'); assert.equal(profile.week_start,0);
         await page.getByRole('link',{name:'Dashboard',exact:true}).click();
-        await visible(page.getByText('Hello, Taylor. Small steps. Consistent progress.',{exact:true}));
-        assert.equal(await page.getByText('TODAY’S TASK PROGRESS',{exact:true}).filter({visible:true}).count(),0);
-        await visible(page.getByText('TODAY’S HABIT PROGRESS',{exact:true}));
+        await visible(page.getByText(/Good (morning|afternoon|evening), Taylor/));
+        assert.equal(await page.getByText('Today’s task progress',{exact:true}).filter({visible:true}).count(),0);
+        await visible(page.getByText('Today’s habit progress',{exact:true}));
         await page.getByRole('link',{name:'Tasks',exact:true}).click();
         await visible(page.getByRole('heading',{name:'Tasks',exact:true}));
         await page.goto(origin+'/settings');

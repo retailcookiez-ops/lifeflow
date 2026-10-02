@@ -1,7 +1,8 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { LifeFlowScreen, screenStyles } from '@/components/lifeflow-screen';
-import { ProfileAction, ProfileFields, profileStyles } from '@/components/profile-fields';
+import { LifeFlowScreen, screenStyles as basescreenStyles } from '@/components/lifeflow-screen';
+import { ProfileAction, ProfileFields, profileStyles as baseprofileStyles } from '@/components/profile-fields';
 import { useProfile } from '@/providers/profile-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { profileFields } from '@/services/profile';
@@ -12,6 +13,9 @@ const steps = [
   { title: 'Choose your focus', section: 'modules', detail: 'Keep your dashboard useful and simple.' },
 ] as const;
 export default function OnboardingScreen() {
+  const { color } = useAppTheme();
+  const screenStyles = useThemedStyles(basescreenStyles);
+  const profileStyles = useThemedStyles(baseprofileStyles);
   const { profile, save, saving, error } = useProfile();
   const { signOut } = useAuth();
   const [step, setStep] = useState(0);
@@ -38,7 +42,7 @@ export default function OnboardingScreen() {
   }
   return <LifeFlowScreen title={steps[step].title} eyebrow={`WELCOME TO LIFEFLOW · ${step + 1} OF 3`} subtitle={steps[step].detail}>
     <View style={[profileStyles.row, { marginBottom: 20 }]}>{steps.map((item, index) => <View key={item.section}
-      style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: index <= step ? '#8BE9C0' : '#28323D' }} />)}</View>
+      style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: index <= step ? color('#8BE9C0') : color('#28323D') }} />)}</View>
     <View style={screenStyles.card}><ProfileFields section={steps[step].section} value={draft} onChange={setDraft} disabled={disabled} /></View>
     {(validation || error) && <Text accessibilityRole="alert" style={[profileStyles.error, { marginBottom: 16 }]}>{validation || error}</Text>}
     <View style={profileStyles.row}>

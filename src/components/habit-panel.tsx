@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { useProfile } from '@/providers/profile-provider';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,14 +12,18 @@ const DAY_ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 0];
 function Action({ label, onPress, disabled = false, selected = false, danger = false }: {
   label: string; onPress: () => void; disabled?: boolean; selected?: boolean; danger?: boolean;
 }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled}
     onPress={onPress} style={[styles.action, selected && styles.selected, disabled && styles.disabled]}>
-    <Text style={{ color: danger ? '#FF9C9C' : GREEN, fontWeight: '600' }}>{label}</Text>
+    <Text style={{ color: danger ? color('#FF9C9C') : color(GREEN), fontWeight: '600' }}>{label}</Text>
   </Pressable>;
 }
 function HabitForm({ initial, disabled = false, onSave, onCancel }: {
   initial?: HabitFields; disabled?: boolean; onSave: (fields: HabitFields) => Promise<boolean>; onCancel?: () => void;
 }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [weekdays, setWeekdays] = useState<Weekday[]>(initial?.weekdays ?? [1, 2, 3, 4, 5, 6, 0]);
   const fields = { title, weekdays };
@@ -30,7 +35,7 @@ function HabitForm({ initial, disabled = false, onSave, onCancel }: {
   return <View style={styles.form}>
     <Text style={styles.label}>{initial ? 'Edit habit' : 'New habit'}</Text>
     <TextInput accessibilityLabel={initial ? 'Edit habit name' : 'New habit name'} style={styles.input}
-      placeholder="Name your habit" placeholderTextColor={MUTED} selectionColor={GREEN}
+      placeholder="Name your habit" placeholderTextColor={color(MUTED)} selectionColor={color(GREEN)}
       value={title} onChangeText={setTitle} maxLength={200} editable={!disabled}
       returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <Text style={styles.muted}>Repeat on · choose at least one weekday</Text>
@@ -54,6 +59,8 @@ const symbols = { complete: '✓', missed: '×', pending: '○', future: '·', o
 const colors = { complete: GREEN, missed: '#FF9C9C', pending: '#F3CE83', future: MUTED, off: '#65717F' };
 
 export function HabitPanel({ system }: { system: ReturnType<typeof useCloudHabits> }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   const { habits, today, ready, error, saving, addHabit, editHabit, deleteHabit, toggleToday, retry } = system;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -123,7 +130,7 @@ export function HabitPanel({ system }: { system: ReturnType<typeof useCloudHabit
             {dates.map(day => {
               const status = dayStatus(habit, day, today);
               return <View key={day} style={[styles.cell, day === today && styles.todayCell]} accessibilityLabel={`${habit.title}, ${day}: ${status}`}>
-                <Text style={{ color: colors[status], fontSize: 18 }}>{symbols[status]}</Text>
+                <Text style={{ color: color(colors[status]), fontSize: 18 }}>{symbols[status]}</Text>
               </View>;
             })}
           </View>)}
@@ -134,7 +141,7 @@ export function HabitPanel({ system }: { system: ReturnType<typeof useCloudHabit
     </View>}
   </View>;
 }
-const styles = StyleSheet.create({
+const basestyles = StyleSheet.create({
   form: { gap: 8, marginBottom: 16 },
   label: { color: '#F4F7FA', fontSize: 15, fontWeight: '700' },
   muted: { color: MUTED, fontSize: 12, lineHeight: 20 },

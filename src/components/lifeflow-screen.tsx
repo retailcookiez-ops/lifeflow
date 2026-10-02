@@ -1,22 +1,19 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-export function LifeFlowScreen({ title, eyebrow, subtitle, children }: {
-  title: string; eyebrow: string; subtitle: string; children: ReactNode;
-}) {
-  return <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
-    <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View><Text style={styles.logo}>LIFE<Text style={{ color: '#8BE9C0' }}>FLOW</Text></Text>
-          <Text style={styles.muted}>Your personal growth space</Text></View>
-        <View style={styles.avatar}><Text style={{ color: '#8BE9C0', fontWeight: 'bold' }}>Y</Text></View>
-      </View>
-      <Text style={styles.eyebrow}>{eyebrow}</Text>
-      <Text accessibilityRole="header" style={styles.heading}>{title}</Text>
-      <Text style={[styles.muted, { marginBottom: 24 }]}>{subtitle}</Text>
+import { useAppTheme } from '@/providers/theme-provider';
+import { Brand } from './app-navigation';
+import { ThemeSwitch } from './theme-switch';
+export function LifeFlowScreen({ title, eyebrow, subtitle, children }: { title: string; eyebrow: string; subtitle: string; children: ReactNode }) {
+  const { colors } = useAppTheme();
+  return <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, minHeight: 0, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1, minHeight: 0 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ padding: 22, paddingTop: 30, paddingBottom: 32, width: '100%', maxWidth: 860, alignSelf: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, gap: 12 }}><Brand /><ThemeSwitch compact /></View>
+      <Text style={{ color: colors.teal, fontSize: 11, fontWeight: '700', letterSpacing: 2 }}>{eyebrow}</Text>
+      <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 34, fontWeight: '800', marginTop: 8 }}>{title}</Text>
+      <Text style={{ color: colors.muted, fontSize: 14, lineHeight: 22, marginTop: 8, marginBottom: 24 }}>{subtitle}</Text>
       {children}
-      <Text style={styles.footer}>LIFEFLOW · YOUR PROGRESS, CONNECTED.</Text>
+      <Text style={{ color: colors.faint, fontSize: 10, textAlign: 'center', marginTop: 25, letterSpacing: 1 }}>LIFEFLOW · YOUR PROGRESS, CONNECTED.</Text>
     </ScrollView>
   </SafeAreaView>;
 }
@@ -25,16 +22,4 @@ export const screenStyles = StyleSheet.create({
   section: { color: '#F4F7FA', fontSize: 20, fontWeight: 'bold', marginTop: 15, marginBottom: 14 },
   muted: { color: '#9CA8B5', fontSize: 13, lineHeight: 20 },
   label: { color: '#F4F7FA', fontSize: 15, fontWeight: '700', marginBottom: 8 },
-});
-const styles = StyleSheet.create({
-  scroll: { flex: 1, minHeight: 0 },
-  safe: { flex: 1, minHeight: 0, backgroundColor: '#0C1015' },
-  container: { padding: 22, paddingTop: 35, paddingBottom: 32, width: '100%', maxWidth: 760, alignSelf: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 },
-  logo: { color: '#F4F7FA', fontSize: 22, fontWeight: '900', letterSpacing: 2 },
-  muted: { color: '#9CA8B5', fontSize: 13, lineHeight: 20 },
-  avatar: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#171E27', alignItems: 'center', justifyContent: 'center' },
-  eyebrow: { color: '#8BE9C0', fontSize: 11, fontWeight: 'bold', letterSpacing: 2 },
-  heading: { color: '#F4F7FA', fontSize: 38, fontWeight: '800', marginTop: 8 },
-  footer: { color: '#65717F', fontSize: 10, textAlign: 'center', marginTop: 25, letterSpacing: 1 },
 });

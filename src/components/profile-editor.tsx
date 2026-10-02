@@ -1,11 +1,15 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { screenStyles } from '@/components/lifeflow-screen';
-import { ProfileAction, ProfileFields, profileStyles } from '@/components/profile-fields';
+import { screenStyles as basescreenStyles } from '@/components/lifeflow-screen';
+import { ProfileAction, ProfileFields, profileStyles as baseprofileStyles } from '@/components/profile-fields';
 import { useProfile } from '@/providers/profile-provider';
 import { profileFields } from '@/services/profile';
 import { validateProfile } from '@/utils/profile';
 export function ProfileEditor() {
+  const { color } = useAppTheme();
+  const screenStyles = useThemedStyles(basescreenStyles);
+  const profileStyles = useThemedStyles(baseprofileStyles);
   const { profile, saving, save, error } = useProfile();
   // Keep an in-progress draft when background sync updates the saved profile.
   const [draft, setDraft] = useState(() => profile ? profileFields(profile) : null);
@@ -23,7 +27,7 @@ export function ProfileEditor() {
       {(['identity', 'routine', 'modules'] as const).map(section => <ProfileFields key={section} section={section} value={draft} disabled={saving}
         onChange={next => { setDraft(next); setMessage(null); setValidation(null); }} />)}
       {(validation || error) && <Text accessibilityRole="alert" style={profileStyles.error}>{validation || error}</Text>}
-      {message && <Text accessibilityLiveRegion="polite" style={{ color: '#8BE9C0' }}>{message}</Text>}
+      {message && <Text accessibilityLiveRegion="polite" style={{ color: color('#8BE9C0') }}>{message}</Text>}
       <View style={profileStyles.row}>
         <ProfileAction label={saving ? 'Saving profile…' : 'Save profile'} primary disabled={saving} onPress={() => { void submit(); }} />
         <ProfileAction label="Discard edits" disabled={saving} onPress={() => { setDraft(profileFields(profile)); setMessage(null); setValidation(null); }} />

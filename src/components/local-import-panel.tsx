@@ -1,12 +1,15 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { screenStyles } from './lifeflow-screen';
+import { screenStyles as basescreenStyles } from './lifeflow-screen';
 import { friendlyError } from '@/lib/errors';
 import { importLocalData, readLocalData, type LocalData } from '@/services/local-import';
 
 export function LocalImportPanel({ email, disabled, onImported }: {
   email: string; disabled: boolean; onImported: () => Promise<void>;
 }) {
+  const { color } = useAppTheme();
+  const screenStyles = useThemedStyles(basescreenStyles);
   const [data, setData] = useState<LocalData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -44,13 +47,14 @@ export function LocalImportPanel({ email, disabled, onImported }: {
       <Button label={busy ? 'Importing…' : 'Confirm import into this account'} disabled={busy || disabled} onPress={() => { void submit(); }} />
       <Button label="Cancel import" disabled={busy} onPress={() => setConfirming(false)} />
     </>}
-    {message && <Text accessibilityLiveRegion="polite" style={[screenStyles.muted, { color: '#8BE9C0' }]}>{message}</Text>}
-    {error && <><Text accessibilityRole="alert" style={{ color: '#FF9C9C', marginTop: 12 }}>{error}</Text><Button label="Check local data again" disabled={busy} onPress={() => { void inspect(); }} /></>}
+    {message && <Text accessibilityLiveRegion="polite" style={[screenStyles.muted, { color: color('#8BE9C0') }]}>{message}</Text>}
+    {error && <><Text accessibilityRole="alert" style={{ color: color('#FF9C9C'), marginTop: 12 }}>{error}</Text><Button label="Check local data again" disabled={busy} onPress={() => { void inspect(); }} /></>}
   </View>;
 }
 function Button({ label, onPress, disabled }: { label: string; onPress: () => void; disabled: boolean }) {
+  const { color } = useAppTheme();
   return <Pressable accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled }} onPress={onPress}
     style={{ minHeight: 44, justifyContent: 'center', marginTop: 8, opacity: disabled ? 0.4 : 1 }}>
-    <Text style={{ color: '#8BE9C0', fontWeight: '600' }}>{label}</Text>
+    <Text style={{ color: color('#8BE9C0'), fontWeight: '600' }}>{label}</Text>
   </Pressable>;
 }

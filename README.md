@@ -28,3 +28,7 @@ See [onboarding setup and testing](docs/ONBOARDING_SETUP.md). Apply migration `2
 ## Suggestion-only AI Coach
 
 AI Coach provides planning suggestions without changing tasks or habits. Follow [AI Coach setup, deployment, privacy and testing](docs/AI_COACH_SETUP.md). Apply the new usage migration, set `OPENAI_API_KEY` as a **Supabase Edge Function secret**, and deploy `ai-coach`. There are no new client environment variables. Context sharing is optional and off by default.
+
+## Responsive design and light/dark themes
+
+The dashboard now follows the supplied desktop and phone designs, with local mountain/Coach artwork, responsive widgets and a persistent theme selector. See [design behavior and testing](docs/DESIGN_AND_THEMES.md). No new database migration or server configuration is required.

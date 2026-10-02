@@ -1,15 +1,19 @@
+import { ThemeSwitch } from '@/components/theme-switch';
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { ProfileEditor } from '@/components/profile-editor';
 import { DeleteAccountPanel } from '@/components/delete-account-panel';
 import { useProfile } from '@/providers/profile-provider';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { LifeFlowScreen, screenStyles } from '@/components/lifeflow-screen';
+import { LifeFlowScreen, screenStyles as basescreenStyles } from '@/components/lifeflow-screen';
 import { LocalImportPanel } from '@/components/local-import-panel';
 import { useLifeFlow } from '@/providers/lifeflow-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { friendlyError } from '@/lib/errors';
 export default function SettingsScreen() {
+  const { color } = useAppTheme();
+  const screenStyles = useThemedStyles(basescreenStyles);
   const { taskSystem, habitSystem } = useLifeFlow();
   const { session, signOut } = useAuth();
   const { saving: profileSaving, reload: reloadProfile } = useProfile();
@@ -27,12 +31,12 @@ export default function SettingsScreen() {
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Your account</Text>
       <Text style={screenStyles.muted}>{session?.user.email}</Text>
-      <Link href="/welcome" style={{ color: '#8BE9C0', paddingVertical: 14 }}>Open Welcome →</Link>
+      <Link href="/welcome" style={{ color: color('#8BE9C0'), paddingVertical: 14 }}>Open Welcome →</Link>
       <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || saving }} disabled={busy || saving} onPress={() => { void logout(); }}
         style={{ minHeight: 44, justifyContent: 'center', opacity: busy || saving ? 0.4 : 1 }}>
-        <Text style={{ color: '#FF9C9C', fontWeight: '600' }}>{busy ? 'Logging out…' : 'Log out'}</Text>
+        <Text style={{ color: color('#FF9C9C'), fontWeight: '600' }}>{busy ? 'Logging out…' : 'Log out'}</Text>
       </Pressable>
-      {error && <Text accessibilityRole="alert" style={{ color: '#FF9C9C' }}>{error}</Text>}
+      {error && <Text accessibilityRole="alert" style={{ color: color('#FF9C9C') }}>{error}</Text>}
     </View>
     <ProfileEditor />
     <View style={screenStyles.card}>
@@ -43,13 +47,12 @@ export default function SettingsScreen() {
       <Text style={screenStyles.muted}>Other devices refresh every 30 seconds and when the app resumes. You can also sync now. If two devices edit the same item, the last saved change wins.</Text>
       <Pressable accessibilityRole="button" disabled={saving || taskSystem.refreshing || habitSystem.refreshing}
         onPress={() => { void sync(); }} style={{ minHeight: 44, justifyContent: 'center' }}>
-        <Text style={{ color: '#8BE9C0', fontWeight: '600' }}>{saving ? 'Saving…' : taskSystem.refreshing || habitSystem.refreshing ? 'Syncing…' : 'Sync now'}</Text>
+        <Text style={{ color: color('#8BE9C0'), fontWeight: '600' }}>{saving ? 'Saving…' : taskSystem.refreshing || habitSystem.refreshing ? 'Syncing…' : 'Sync now'}</Text>
       </Pressable>
     </View>
     <LocalImportPanel email={session?.user.email ?? 'this account'} disabled={saving || busy} onImported={sync} />
     <View style={screenStyles.card}>
-      <Text style={screenStyles.label}>Appearance</Text><Text style={screenStyles.muted}>Dark · Active</Text>
-      <Text accessibilityState={{ disabled: true }} style={[screenStyles.muted, { opacity: 0.6, marginTop: 8 }]}>Light · Coming later</Text>
+      <Text style={screenStyles.label}>Appearance</Text><ThemeSwitch /><Text style={[screenStyles.muted, { marginTop: 12 }]}>Saved on this device. Choose the look that helps you focus.</Text>
     </View>
     <View style={screenStyles.card}>
       <Text style={screenStyles.label}>Calendar and history</Text>

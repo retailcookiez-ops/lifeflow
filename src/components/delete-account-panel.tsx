@@ -1,12 +1,15 @@
+import { useThemedStyles } from '@/providers/theme-provider';
 import { useRef, useState } from 'react';
 import { Modal, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { screenStyles } from '@/components/lifeflow-screen';
-import { ProfileAction, ProfileInput, profileStyles } from '@/components/profile-fields';
+import { screenStyles as basescreenStyles } from '@/components/lifeflow-screen';
+import { ProfileAction, ProfileInput, profileStyles as baseprofileStyles } from '@/components/profile-fields';
 import { useAuth } from '@/providers/auth-provider';
 import { deleteAccount } from '@/services/delete-account';
 import { friendlyError } from '@/lib/errors';
 export function DeleteAccountPanel({ disabled }: { disabled: boolean }) {
+  const screenStyles = useThemedStyles(basescreenStyles);
+  const profileStyles = useThemedStyles(baseprofileStyles);
   const { session, endDeletedSession } = useAuth();
   const [open, setOpen] = useState(false); const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState(''); const [busy, setBusy] = useState(false);

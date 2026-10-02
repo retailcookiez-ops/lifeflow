@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '@/providers/theme-provider';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { useCloudTasks } from '@/hooks/use-cloud-tasks';
@@ -10,15 +11,19 @@ const priorityColors: Record<Priority, string> = { low: GREEN, medium: '#F3CE83'
 function Action({ label, onPress, disabled = false, selected = false, danger = false }: {
   label: string; onPress: () => void; disabled?: boolean; selected?: boolean; danger?: boolean;
 }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled}
     onPress={onPress} style={[styles.action, selected && styles.selected, disabled && styles.disabled]}>
-    <Text style={{ color: danger ? '#FF9C9C' : GREEN, fontWeight: '600' }}>{label}</Text>
+    <Text style={{ color: danger ? color('#FF9C9C') : color(GREEN), fontWeight: '600' }}>{label}</Text>
   </Pressable>;
 }
 
 function TaskForm({ task, disabled = false, onSave, onCancel }: {
   task?: Task; disabled?: boolean; onSave: (fields: TaskFields) => Promise<boolean>; onCancel?: () => void;
 }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   const [title, setTitle] = useState(task?.title ?? '');
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '');
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium');
@@ -32,11 +37,11 @@ function TaskForm({ task, disabled = false, onSave, onCancel }: {
   return <View style={styles.form}>
     <Text style={styles.label}>{task ? 'Edit task' : 'New task'}</Text>
     <TextInput accessibilityLabel={task ? 'Edit task title' : 'New task title'} style={styles.input}
-      placeholder="What do you need to do?" placeholderTextColor={MUTED} selectionColor={GREEN}
+      placeholder="What do you need to do?" placeholderTextColor={color(MUTED)} selectionColor={color(GREEN)}
       value={title} onChangeText={setTitle} maxLength={200} editable={!disabled} returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <Text style={styles.muted}>Due date (optional, YYYY-MM-DD)</Text>
     <TextInput accessibilityLabel="Due date, YYYY-MM-DD" style={styles.input} value={dueDate} onChangeText={setDueDate}
-      placeholder="YYYY-MM-DD" placeholderTextColor={MUTED} selectionColor={GREEN} maxLength={10}
+      placeholder="YYYY-MM-DD" placeholderTextColor={color(MUTED)} selectionColor={color(GREEN)} maxLength={10}
       autoCapitalize="none" editable={!disabled} returnKeyType="done" onSubmitEditing={() => { void submit(); }} />
     <View style={styles.controls}>
       <Action label="Due today" disabled={disabled} onPress={() => setDueDate(localDate())} />
@@ -57,6 +62,8 @@ function TaskForm({ task, disabled = false, onSave, onCancel }: {
 }
 
 export function TaskPanel({ system }: { system: ReturnType<typeof useCloudTasks> }) {
+  const { color } = useAppTheme();
+  const styles = useThemedStyles(basestyles);
   const { tasks, ready, error, saving, addTask, editTask, deleteTask, toggleTask, retry } = system;
   const [filter, setFilter] = useState<TaskFilter>('Today');
   const [sort, setSort] = useState<TaskSort>('dueDate');
@@ -94,11 +101,11 @@ export function TaskPanel({ system }: { system: ReturnType<typeof useCloudTasks>
     {visible.map(task => <View key={task.id} style={styles.row}>
       <Pressable accessibilityRole="checkbox" accessibilityLabel={task.title} accessibilityState={{ checked: task.done, disabled: saving || !ready }}
         disabled={saving || !ready} style={[styles.toggle, saving && styles.disabled]} onPress={() => { void toggleTask(task.id); }}>
-        <View style={[styles.checkbox, task.done && styles.checked]}>{task.done && <Text style={{ color: '#0C1015' }}>✓</Text>}</View>
+        <View style={[styles.checkbox, task.done && styles.checked]}>{task.done && <Text style={{ color: color('#062A2B') }}>✓</Text>}</View>
         <Text style={[styles.title, task.done && styles.done]}>{task.title}</Text>
       </Pressable>
       <View style={styles.metadata}>
-        <Text style={{ color: priorityColors[task.priority], fontSize: 12 }}>{task.priority.toUpperCase()}</Text>
+        <Text style={{ color: color(priorityColors[task.priority]), fontSize: 12 }}>{task.priority.toUpperCase()}</Text>
         <Text style={[styles.muted, !task.done && task.dueDate !== null && task.dueDate < today && styles.error]}>
           {task.dueDate ? `${!task.done && task.dueDate < today ? 'Overdue · ' : 'Due · '}${task.dueDate}` : 'No due date'}
         </Text>
@@ -116,7 +123,7 @@ export function TaskPanel({ system }: { system: ReturnType<typeof useCloudTasks>
     </View>)}
   </View>;
 }
-const styles = StyleSheet.create({
+const basestyles = StyleSheet.create({
   form: { gap: 8, marginBottom: 16 },
   label: { color: '#F4F7FA', fontSize: 15, fontWeight: '700' },
   muted: { color: MUTED, fontSize: 12, lineHeight: 20 },
